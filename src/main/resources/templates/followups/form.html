@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${followUp == null} ? 'Add follow-up' : 'Edit follow-up')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <a class="small fw-semibold text-decoration-none"
+                       th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/followups}">
+                        <span class="ms ms-sm">arrow_back</span> Back
+                    </a>
+                    <h1 class="mt-1" th:text="${followUp == null} ? 'Add follow-up' : 'Edit follow-up'">Add follow-up</h1>
+                    <p th:if="${customer != null}" th:text="'For ' + ${customer.companyName}"></p>
+                </div>
+            </div>
+
+            <form class="cp-card form-card" th:object="${form}" method="post" novalidate
+                  th:action="${followUp == null} ? @{/followups} : @{/followups/{id}(id=${followUp.id})}">
+                <div class="cp-card-body d-grid gap-3">
+                    <div>
+                        <label class="form-label" for="customerId">Customer <span class="text-danger">*</span></label>
+                        <select class="form-select" th:field="*{customerId}" th:errorclass="is-invalid" th:disabled="${followUp != null}"
+                                onchange="if(!this.disabled){location.href='?customerId='+this.value}">
+                            <option value="">Choose a customer…</option>
+                            <option th:each="c : ${customerOptions}" th:value="${c.id}" th:text="${c.companyName}"></option>
+                        </select>
+                        <input th:if="${followUp != null}" type="hidden" th:field="*{customerId}">
+                        <div class="invalid-feedback" th:errors="*{customerId}"></div>
+                    </div>
+
+                    <div th:if="${activityOptions != null and !activityOptions.isEmpty()}">
+                        <label class="form-label" for="activityId">From activity <span class="text-faint fw-normal">(optional)</span></label>
+                        <select class="form-select" th:field="*{activityId}">
+                            <option value="">Not linked to an activity</option>
+                            <option th:each="a : ${activityOptions}" th:value="${a.id}"
+                                    th:text="${@fmt.date(a.activityDate)} + ' · ' + ${a.activityType.label} + ' · ' + ${#strings.abbreviate(a.outcome, 60)}"></option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="dueDate">Due date <span class="text-danger">*</span></label>
+                            <input class="form-control" type="date" th:field="*{dueDate}" th:errorclass="is-invalid">
+                            <div class="invalid-feedback" th:errors="*{dueDate}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="assignedUserId">Assigned to <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{assignedUserId}" th:errorclass="is-invalid">
+                                <option th:each="u : ${userOptions}" th:value="${u.id}" th:text="${u.fullName}"></option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{assignedUserId}"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" for="notes">Notes</label>
+                        <textarea class="form-control" th:field="*{notes}" th:errorclass="is-invalid" rows="3" maxlength="255" data-count="255"
+                                  placeholder="e.g. Recheck budget approval"></textarea>
+                        <div class="d-flex justify-content-between">
+                            <div class="invalid-feedback d-block" th:errors="*{notes}"></div>
+                            <div class="form-text ms-auto" data-count-for="notes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
+                    <a class="btn btn-light" th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/followups}">Cancel</a>
+                    <button class="btn btn-primary" type="submit"><span class="ms">save</span> Save follow-up</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

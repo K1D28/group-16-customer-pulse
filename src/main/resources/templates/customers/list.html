@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Customers')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <h1>Customers</h1>
+                    <p th:text="${me.manager} ? 'All team customers.' : 'Customers assigned to you.'"></p>
+                </div>
+                <a class="btn btn-primary" th:href="@{/customers/new}"><span class="ms">add</span> Add customer</a>
+            </div>
+
+            <section class="cp-card">
+                <form class="cp-card-body filter-bar border-bottom" th:action="@{/customers}" method="get">
+                    <div class="flex-grow-1">
+                        <label class="form-label" for="q">Search</label>
+                        <input class="form-control" id="q" name="q" th:value="${q}" placeholder="Company or contact name">
+                    </div>
+                    <div>
+                        <label class="form-label" for="status">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All statuses</option>
+                            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}" th:selected="${s == status}"></option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><span class="ms">search</span> Search</button>
+                    <a th:if="${q != null or status != null}" class="btn btn-light" th:href="@{/customers}">Clear</a>
+                </form>
+
+                <div th:if="${page.totalElements == 0}" class="empty">
+                    <span class="ms">search_off</span>
+                    <span th:text="${q != null or status != null} ? 'No results found' : 'No customers yet. Add your first one.'">No results found</span>
+                </div>
+
+                <div class="table-responsive" th:if="${page.totalElements > 0}">
+                    <table class="table cp-table">
+                        <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Owner</th>
+                            <th>Last activity</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${page.content}">
+                            <td>
+                                <a class="row-link" th:href="@{/customers/{id}(id=${c.id})}" th:text="${c.companyName}">ABC</a>
+                                <div class="text-faint small" th:text="${c.email}">email</div>
+                            </td>
+                            <td>
+                                <div th:text="${c.contactName ?: '—'}">Contact</div>
+                                <div class="text-faint small" th:text="${c.phone}">phone</div>
+                            </td>
+                            <td><span th:replace="~{fragments/layout :: status(${c.currentStatus})}"></span></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-sm avatar-soft" th:text="${c.owner.initials}">NO</span>
+                                    <span th:text="${c.owner.fullName}">Owner</span>
+                                </div>
+                            </td>
+                            <td class="text-nowrap" th:with="last=${lastActivity.get(c.id)}">
+                                <span th:text="${@fmt.ago(last)}" th:classappend="${last == null} ? 'text-faint'">today</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="cp-card-body d-flex flex-wrap align-items-center justify-content-between gap-2 border-top"
+                     th:if="${page.totalElements > 0}">
+                    <span class="text-muted"
+                          th:text="'Showing ' + ${page.number * page.size + 1} + '–' + ${page.number * page.size + page.numberOfElements} + ' of ' + ${page.totalElements}">Showing</span>
+                    <nav th:if="${page.totalPages > 1}" aria-label="Pages">
+                        <ul class="pagination">
+                            <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/customers(q=${q},status=${status},page=${page.number - 1})}">Previous</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? 'active'">
+                                <a class="page-link" th:href="@{/customers(q=${q},status=${status},page=${i})}" th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/customers(q=${q},status=${status},page=${page.number + 1})}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

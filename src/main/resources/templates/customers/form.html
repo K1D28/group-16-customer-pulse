@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${customer == null} ? 'New customer' : 'Edit customer')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <a class="small fw-semibold text-decoration-none"
+                       th:href="${customer == null} ? @{/customers} : @{/customers/{id}(id=${customer.id})}">
+                        <span class="ms ms-sm">arrow_back</span> Back
+                    </a>
+                    <h1 class="mt-1" th:text="${customer == null} ? 'New customer' : 'Edit ' + ${customer.companyName}">New customer</h1>
+                    <p th:if="${customer == null}">New customers start in <strong>Negotiating</strong> status.</p>
+                </div>
+            </div>
+
+            <form class="cp-card form-card" th:object="${form}" method="post"
+                  th:action="${customer == null} ? @{/customers} : @{/customers/{id}(id=${customer.id})}" novalidate>
+                <div class="cp-card-body d-grid gap-3">
+
+                    <div th:if="${similar != null}" class="alert alert-warning flash mb-0" role="alert">
+                        <span class="ms">warning</span>
+                        <div>
+                            <div class="fw-semibold">A customer with a similar name already exists:</div>
+                            <ul class="mb-2 mt-1">
+                                <li th:each="s : ${similar}">
+                                    <span th:text="${s.companyName}">ABC Co.</span>
+                                    <span class="text-muted" th:text="'(owner: ' + ${s.owner.fullName} + ')'"></span>
+                                </li>
+                            </ul>
+                            <div>Check that this is not a duplicate. If it is a different company, save again.</div>
+                            <input type="hidden" name="confirmDuplicate" value="true">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" for="companyName">Company name <span class="text-danger">*</span></label>
+                        <input class="form-control" th:field="*{companyName}" th:errorclass="is-invalid" maxlength="150" required>
+                        <div class="invalid-feedback" th:errors="*{companyName}"></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="contactName">Contact name</label>
+                            <input class="form-control" th:field="*{contactName}" th:errorclass="is-invalid" maxlength="100">
+                            <div class="invalid-feedback" th:errors="*{contactName}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="phone">Phone</label>
+                            <input class="form-control" th:field="*{phone}" th:errorclass="is-invalid" maxlength="30" placeholder="+66 81 234 5678">
+                            <div class="invalid-feedback" th:errors="*{phone}"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="email">Contact email</label>
+                        <input class="form-control" type="email" th:field="*{email}" th:errorclass="is-invalid" maxlength="100">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div th:if="${me.manager}">
+                        <label class="form-label" for="ownerId">Owner</label>
+                        <select class="form-select" th:field="*{ownerId}">
+                            <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.role.label} + ')'"></option>
+                        </select>
+                    </div>
+                    <div th:unless="${me.manager}" class="text-muted small">
+                        <span class="ms ms-sm">person</span>
+                        <span th:text="${customer == null} ? 'You will be the owner of this customer.' : 'Owner: ' + ${customer.owner.fullName}"></span>
+                    </div>
+                </div>
+                <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
+                    <a class="btn btn-light" th:href="${customer == null} ? @{/customers} : @{/customers/{id}(id=${customer.id})}">Cancel</a>
+                    <button class="btn btn-primary" type="submit">
+                        <span class="ms">save</span>
+                        <span th:text="${similar != null} ? 'Save anyway' : 'Save customer'">Save</span>
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,39 @@
+package com.customerpulse.web;
+
+import com.customerpulse.domain.*;
+import com.customerpulse.security.CurrentUser;
+import com.customerpulse.service.CaseService;
+import com.customerpulse.service.DashboardService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+/** Adds the logged-in user, alert count and enum lists to every page. */
+@ControllerAdvice
+public class GlobalModelAdvice {
+
+    private final CurrentUser currentUser;
+    private final DashboardService dashboard;
+    private final CaseService cases;
+
+    public GlobalModelAdvice(CurrentUser currentUser, DashboardService dashboard, CaseService cases) {
+        this.currentUser = currentUser;
+        this.dashboard = dashboard;
+        this.cases = cases;
+    }
+
+    @ModelAttribute
+    public void common(Model model, HttpServletRequest request) {
+        model.addAttribute("currentPath", request.getRequestURI());
+        model.addAttribute("statuses", CustomerStatus.values());
+        model.addAttribute("activityTypes", ActivityType.values());
+        model.addAttribute("channels", Channel.values());
+        model.addAttribute("roles", Role.values());
+        currentUser.find().ifPresent(me -> {
+            model.addAttribute("me", me);
+            model.addAttribute("alertCount", dashboard.alerts(me).total());
+            model.addAttribute("myCaseCount", cases.myOpenWork(me).size());
+        });
+    }
+}

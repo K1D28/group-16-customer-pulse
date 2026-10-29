@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('User management')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <h1>User management</h1>
+                    <p th:text="'People in ' + ${me.team.name} + '. New users join your team.'"></p>
+                </div>
+                <a class="btn btn-primary" th:href="@{/users/new}"><span class="ms">person_add</span> Add user</a>
+            </div>
+
+            <section class="cp-card">
+                <div class="table-responsive">
+                    <table class="table cp-table">
+                        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Customers</th><th>Created</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody>
+                        <tr th:each="u : ${users}" th:classappend="${!u.active} ? 'text-faint'">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-sm" th:classappend="${!u.manager} ? 'avatar-soft'" th:text="${u.initials}"></span>
+                                    <span class="fw-semibold" th:text="${u.fullName}"></span>
+                                    <span th:if="${u.id == me.id}" class="text-faint small">(you)</span>
+                                </div>
+                            </td>
+                            <td th:text="${u.email}"></td>
+                            <td><span class="pill no-dot role-pill" th:classappend="${u.manager} ? 'manager'" th:text="${u.role.label}"></span></td>
+                            <td>
+                                <span th:if="${u.active}" class="pill fu-completed">Active</span>
+                                <span th:unless="${u.active}" class="pill st-inactive">Inactive</span>
+                            </td>
+                            <td class="text-end tnum" th:text="${owned.get(u.id)}"></td>
+                            <td class="text-nowrap" th:text="${@fmt.date(u.createdAt)}"></td>
+                            <td class="text-end text-nowrap">
+                                <a class="btn btn-sm btn-light" th:href="@{/users/{id}/edit(id=${u.id})}"><span class="ms">edit</span> Edit</a>
+                                <form th:if="${u.id != me.id and u.active}" class="d-inline" th:action="@{/users/{id}/deactivate(id=${u.id})}" method="post"
+                                      th:attr="data-confirm='Deactivate ' + ${u.fullName} + '? They will not be able to log in.'">
+                                    <button class="btn btn-sm btn-light" type="submit"><span class="ms">person_off</span> Deactivate</button>
+                                </form>
+                                <form th:if="${!u.active}" class="d-inline" th:action="@{/users/{id}/activate(id=${u.id})}" method="post">
+                                    <button class="btn btn-sm btn-soft" type="submit"><span class="ms">person_check</span> Reactivate</button>
+                                </form>
+                                <form th:if="${u.id != me.id}" class="d-inline" th:action="@{/users/{id}/delete(id=${u.id})}" method="post"
+                                      th:attr="data-confirm='Delete user ' + ${u.fullName} + '?'">
+                                    <button class="btn btn-sm btn-light" type="submit" aria-label="Delete"><span class="ms">delete</span></button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

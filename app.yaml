@@ -1,0 +1,12 @@
+# Google App Engine (standard, Java 21).
+# Deploy: mvn -DskipTests package && gcloud app deploy target/customer-pulse.jar --appyaml=app.yaml
+runtime: java21
+instance_class: F2
+entrypoint: java -jar customer-pulse.jar
+
+env_variables:
+  SPRING_PROFILES_ACTIVE: "mysql"
+  # Replace PROJECT:REGION:INSTANCE with your Cloud SQL instance connection name
+  DB_URL: "jdbc:mysql:///customer_pulse?cloudSqlInstance=PROJECT:REGION:INSTANCE&socketFactory=com.google.cloud.sql.mysql.SocketFactory"
+  DB_USER: "pulse"
+  DB_PASS: "CHANGE_ME"

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Log in')}"></head>
+<body>
+<div class="login-wrap">
+    <section class="login-art">
+        <div class="d-flex align-items-center gap-2 fw-semibold fs-5">
+            <span class="brand-mark" style="background:rgba(255,255,255,.18)"><span class="ms ms-sm">monitoring</span></span>
+            Customer Pulse
+        </div>
+        <div>
+            <h2>No customer or follow-up gets forgotten.</h2>
+            <p>One shared timeline for every account: activity across LINE, email, phone and meetings, lifecycle status with full history, and alerts for overdue follow-ups and quiet accounts.</p>
+        </div>
+        <div class="small" style="color:rgba(255,255,255,.65)">Group 16 · Mae Fah Luang University · Prototype</div>
+    </section>
+
+    <section class="login-panel">
+        <div class="login-box">
+            <h1 class="h3 fw-semibold mb-1">Log in</h1>
+            <p class="text-muted mb-4">Use your work email and password.</p>
+
+            <div th:if="${param.error}" class="alert alert-danger flash" role="alert">
+                <span class="ms">error</span> Invalid email or password
+            </div>
+            <div th:if="${param.logout}" class="alert alert-info flash" role="status">
+                <span class="ms">logout</span> You have been logged out.
+            </div>
+
+            <form th:action="@{/login}" method="post" class="d-grid gap-3" id="loginForm">
+                <div>
+                    <label class="form-label" for="email">Email</label>
+                    <input class="form-control" id="email" name="email" type="email" autocomplete="username" required autofocus>
+                </div>
+                <div>
+                    <label class="form-label" for="password">Password</label>
+                    <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required>
+                </div>
+                <button class="btn btn-primary py-2" type="submit">Log in</button>
+            </form>
+
+            <div class="mt-4 pt-3 border-top">
+                <div class="small-caps mb-2">Demo managers · password <code>password123</code></div>
+                <div class="d-grid gap-2 demo-accounts">
+                    <button type="button" class="btn btn-light justify-content-start" data-demo="priya@example.com">
+                        <span class="avatar avatar-sm">PR</span> Priya Raman <span class="ms-auto pill no-dot role-pill manager">Team A</span>
+                    </button>
+                    <button type="button" class="btn btn-light justify-content-start" data-demo="daniel@example.com">
+                        <span class="avatar avatar-sm">DK</span> Daniel Kim <span class="ms-auto pill no-dot role-pill manager">Team B</span>
+                    </button>
+                    <button type="button" class="btn btn-light justify-content-start" data-demo="sofia@example.com">
+                        <span class="avatar avatar-sm">SA</span> Sofia Alvarez <span class="ms-auto pill no-dot role-pill manager">Team C</span>
+                    </button>
+                </div>
+                <p class="form-text mt-2 mb-0">Managers add their staff under User management. Staff log in with the email and password their manager set.</p>
+            </div>
+        </div>
+    </section>
+</div>
+<script>
+document.querySelectorAll('[data-demo]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.getElementById('email').value = b.getAttribute('data-demo');
+    document.getElementById('password').value = 'password123';
+    document.getElementById('loginForm').submit();
+  });
+});
+</script>
+</body>
+</html>

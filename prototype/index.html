@@ -1,0 +1,1312 @@
+<title>Customer Pulse</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-25..0&display=swap">
+<style>
+  html,body{margin:0;padding:0;}
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#c3c6d7;border-radius:99px;}
+  body{background:#f8f9ff;}
+  .material-symbols-outlined{font-variation-settings:'opsz' 22,'wght' 450,'FILL' 0,'GRAD' 0;line-height:1;vertical-align:middle;}
+  .tnum{font-variant-numeric:tabular-nums;}
+  .view{display:none;}
+  .view.active{display:block;}
+  [hidden]{display:none!important;}
+  .drawer-panel{transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);}
+  .drawer-panel.open{transform:translateX(0);}
+  .scrim-el{opacity:0;pointer-events:none;transition:opacity .18s;}
+  .scrim-el.open{opacity:1;pointer-events:auto;}
+  .pop{opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:all .14s ease;transform-origin:top right;}
+  .pop.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+  h1,h2,h3{text-wrap:balance;}
+  input,select,textarea{font-family:inherit;}
+  @media (max-width: 900px){
+    .app-sidebar{position:fixed;transform:translateX(-100%);transition:transform .2s;}
+    .app-sidebar.open{transform:translateX(0);}
+    .app-shell{padding-left:0!important;}
+    .app-header{left:0!important;}
+  }
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        "tertiary": "#00734c", "tertiary-container": "#007d55", "on-tertiary": "#ffffff",
+        "tertiary-fixed": "#a6f2c7", "on-tertiary-fixed": "#00210f",
+        "surface-container-highest": "#d3e4fe", "surface-container-high": "#dce9ff",
+        "surface-container": "#e5eeff", "surface-container-low": "#eff4ff", "surface-container-lowest": "#ffffff",
+        "on-primary-fixed": "#00174b", "primary-fixed": "#dbe1ff", "primary-fixed-dim": "#b4c5ff",
+        "error": "#ba1a1a", "on-error": "#ffffff", "error-container": "#ffdad6", "on-error-container": "#93000a",
+        "background": "#f8f9ff", "on-background": "#0b1c30",
+        "secondary-fixed": "#dae2fd", "on-secondary-fixed": "#131b2e", "on-secondary-fixed-variant": "#3f465c",
+        "on-surface": "#0b1c30", "on-surface-variant": "#434655",
+        "surface": "#f8f9ff", "surface-dim": "#cbdbf5", "surface-bright": "#f8f9ff", "surface-variant": "#d3e4fe",
+        "primary": "#0748c2", "on-primary": "#ffffff", "primary-container": "#2563eb", "on-primary-container": "#eef1ff",
+        "outline": "#737686", "outline-variant": "#c3c6d7",
+        "secondary": "#565e74", "on-secondary": "#ffffff", "secondary-container": "#dae2fd", "on-secondary-container": "#404862",
+        "amber": "#8a5a00", "amber-container": "#ffe5ad", "on-amber-container": "#291800"
+      },
+      fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+      boxShadow: {
+        xs: "0 1px 2px rgba(11,28,48,0.05)",
+        card: "0 1px 2px rgba(11,28,48,0.04), 0 8px 20px -12px rgba(11,28,48,0.14)",
+        pop: "0 12px 28px -8px rgba(11,28,48,0.22)"
+      }
+    }
+  }
+}
+</script>
+
+<div class="app-shell min-h-screen pl-64 bg-background text-on-surface font-sans antialiased" style="font-size:14px">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-40 flex flex-col shadow-[1px_0_0_rgba(11,28,48,0.06)]">
+    <div class="h-16 px-5 flex items-center gap-2.5 shrink-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-container to-primary flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-white text-[18px]">monitoring</span>
+      </div>
+      <span class="font-semibold text-[16px] tracking-tight">Customer Pulse</span>
+    </div>
+    <div class="px-5 py-2">
+      <span class="text-[11px] font-semibold text-outline uppercase tracking-wider">Office Navigation</span>
+    </div>
+    <nav class="flex-1 px-3 space-y-0.5" id="nav"></nav>
+    <div class="p-3 space-y-2">
+      <div class="bg-surface-container-low rounded-xl p-3 flex flex-col gap-0.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[10.5px] font-semibold text-outline tracking-wider">STATUS</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+        </div>
+        <span class="text-[12.5px] font-semibold">Workspace Sync</span>
+        <p class="text-[11.5px] text-on-surface-variant leading-snug">All systems live &amp; updated.</p>
+      </div>
+      <div class="bg-surface-container-low rounded-xl p-3 flex flex-col gap-1.5">
+        <span class="text-[10.5px] font-semibold text-outline tracking-wider">VIEWING AS</span>
+        <select id="roleSelect" class="w-full h-8 px-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-[12.5px] font-medium focus:outline-none focus:ring-2 focus:ring-primary-container"></select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Header -->
+  <header class="app-header fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/95 backdrop-blur z-30 px-6 flex items-center gap-4 shadow-[0_1px_8px_rgba(11,28,48,0.04)]">
+    <button id="mobileNavBtn" class="hidden max-[900px]:flex w-9 h-9 items-center justify-center rounded-xl hover:bg-surface-container"><span class="material-symbols-outlined">menu</span></button>
+    <div class="relative w-full max-w-md">
+      <span class="material-symbols-outlined text-outline absolute left-3 top-1/2 -translate-y-1/2 text-[19px]">search</span>
+      <input id="searchInput" class="w-full h-9 pl-10 pr-3 rounded-xl bg-surface-container-low placeholder:text-outline text-[13px] focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary-container transition" placeholder="Search accounts, contacts, logs...">
+    </div>
+    <div class="ml-auto flex items-center gap-2.5 shrink-0">
+      <button id="btnNewActivity" class="h-9 px-3.5 bg-primary-container text-on-primary-container rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 hover:bg-primary transition">
+        <span class="material-symbols-outlined text-[18px]">add</span><span class="max-[560px]:hidden">New Activity</span>
+      </button>
+      <div class="relative">
+        <button id="btnBell" class="relative w-9 h-9 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition">
+          <span class="material-symbols-outlined text-[20px]">notifications</span>
+          <span id="bellDot" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest" hidden></span>
+        </button>
+        <div id="bellPop" class="pop absolute right-0 top-11 w-80 bg-surface-container-lowest rounded-xl shadow-pop border border-outline-variant/40 z-50 overflow-hidden">
+          <div class="px-4 py-3 border-b border-outline-variant/40 flex items-center justify-between">
+            <span class="font-semibold text-[13px]">Alerts</span>
+            <span id="bellCount" class="text-[11px] font-semibold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">0</span>
+          </div>
+          <div id="bellList" class="max-h-80 overflow-y-auto divide-y divide-outline-variant/30"></div>
+        </div>
+      </div>
+      <div class="relative">
+        <button id="btnAvatar" class="w-8.5 h-8.5 rounded-full bg-primary flex items-center justify-center text-white text-[12px] font-bold" style="width:34px;height:34px">NO</button>
+        <div id="avatarPop" class="pop absolute right-0 top-11 w-64 bg-surface-container-lowest rounded-xl shadow-pop border border-outline-variant/40 z-50 p-4"><div id="avatarPopBody"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="pt-16">
+    <section id="view-dashboard" class="view px-6 md:px-8 py-6 max-w-[1400px]"></section>
+    <section id="view-customers" class="view px-6 md:px-8 py-6 max-w-[1400px]"></section>
+    <section id="view-followups" class="view px-6 md:px-8 py-6 max-w-[1400px]"></section>
+    <section id="view-activity" class="view px-6 md:px-8 py-6 max-w-[1400px]"></section>
+    <section id="view-reports" class="view px-6 md:px-8 py-6 max-w-[1400px]"></section>
+  </main>
+</div>
+
+<!-- Drawer -->
+<div id="scrim" class="scrim-el fixed inset-0 bg-[#0b1c30]/40 z-40"></div>
+<aside id="drawer" class="drawer-panel fixed top-0 right-0 h-full w-full sm:w-[460px] bg-surface-container-lowest z-50 shadow-pop flex flex-col"></aside>
+
+<!-- Modal -->
+<div id="modalScrim" class="scrim-el fixed inset-0 bg-[#0b1c30]/40 z-50 flex items-center justify-center p-5">
+  <div id="modalBox" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-pop w-full max-w-md max-h-[88vh] flex flex-col"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-on-surface text-white text-[12.5px] font-semibold px-4 py-2.5 rounded-full shadow-pop opacity-0 pointer-events-none transition-all z-[60]"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= ICONS / CONST ============================= */
+function ic(name, cls){ return '<span class="material-symbols-outlined '+(cls||'')+'">'+name+'</span>'; }
+
+var NAV = [
+  {id:'dashboard', label:'Overview / Dashboard', icon:'dashboard'},
+  {id:'customers', label:'Customers & Accounts', icon:'corporate_fare'},
+  {id:'followups', label:'Follow-up Tasks', icon:'assignment_late'},
+  {id:'activity', label:'Activity Log', icon:'history'},
+  {id:'reports', label:'Reports', icon:'insert_chart'}
+];
+
+var STATUSES = [
+  {id:'negotiating', name:'Negotiating', badge:'bg-secondary-fixed text-primary-container', dot:'bg-primary-container'},
+  {id:'active', name:'Active', badge:'bg-tertiary-fixed text-tertiary', dot:'bg-tertiary'},
+  {id:'hold', name:'Hold', badge:'bg-secondary-container text-on-secondary-container', dot:'bg-secondary'},
+  {id:'inactive', name:'Inactive', badge:'bg-surface-container text-secondary', dot:'bg-outline'},
+  {id:'lost', name:'Lost', badge:'bg-error-container text-on-error-container', dot:'bg-error'}
+];
+function statusOf(id){ return STATUSES.find(function(s){return s.id===id;}) || STATUSES[0]; }
+
+var CHANNELS = ['LINE','Email','Phone','Online Meeting','In Person','Quotation'];
+var CHAN = {
+  LINE:{icon:'chat', color:'text-tertiary'},
+  Email:{icon:'mail', color:'text-primary'},
+  Phone:{icon:'call', color:'text-on-surface-variant'},
+  'Online Meeting':{icon:'videocam', color:'text-secondary'},
+  'In Person':{icon:'handshake', color:'text-amber'},
+  Quotation:{icon:'request_quote', color:'text-primary-container'}
+};
+var CHAN_SHORT = { LINE:'LINE', Email:'Email', Phone:'Phone', 'Online Meeting':'Online', 'In Person':'In person', Quotation:'Quote' };
+
+var OUTCOMES = ['Completed','Follow-up needed','Awaiting response','Budget pending','No answer'];
+
+var AVATAR_PALETTES = [
+  'bg-primary-fixed text-on-primary-fixed', 'bg-tertiary-fixed text-on-tertiary-fixed',
+  'bg-secondary-fixed text-on-secondary-fixed', 'bg-amber-container text-on-amber-container'
+];
+function avatarClass(id){ var h=0; for(var i=0;i<id.length;i++) h=(h+id.charCodeAt(i))%AVATAR_PALETTES.length; return AVATAR_PALETTES[h]; }
+
+var USERS = [
+  {id:'u1', name:'Nadia Osei',       initials:'NO', role:'staff',   team:'Growth Team'},
+  {id:'u2', name:'Marcus Lindqvist', initials:'ML', role:'staff',   team:'Growth Team'},
+  {id:'u3', name:'Priya Raman',      initials:'PR', role:'manager', team:'Growth Team'},
+  {id:'u4', name:'Han Zhao',         initials:'HZ', role:'admin',   team:'—'}
+];
+function userOf(id){ return USERS.find(function(u){return u.id===id;}); }
+var ROLE_LABEL = {staff:'Staff', manager:'Manager', admin:'Admin'};
+
+/* ============================= DATA ============================= */
+var now = new Date();
+function daysAgo(n,h){ var d=new Date(now); d.setDate(d.getDate()-n); if(h!=null) d.setHours(h,0,0,0); return d; }
+function daysFromNow(n,h){ var d=new Date(now); d.setDate(d.getDate()+n); if(h!=null) d.setHours(h,0,0,0); return d; }
+
+var seq = {c:1000,a:1,f:1};
+function mkCustomer(company, contact, email, phone, status, ownerId, days, dealValue){
+  seq.c++;
+  return { id:'cus'+seq.c, code:'ACC-'+seq.c, company:company, contact:contact, email:email, phone:phone,
+    status:status, ownerId:ownerId, team:userOf(ownerId).team, dealValue: dealValue||0,
+    createdAt: daysAgo(days+40), updatedAt: daysAgo(days) };
+}
+
+var customers = [
+  mkCustomer('ABC Company Ltd.', 'Suchada Boon', 'suchada@abc-th.com', '+66 89 123 4501', 'hold', 'u1', 1),
+  mkCustomer('Orion Freight Co.', 'Wichai Meesuk', 'wichai@orionfr.co', '+66 81 553 2290', 'active', 'u1', 3),
+  mkCustomer('Blue Harbor Logistics', 'Kanya Srisuk', 'kanya@bluehbr.com', '+66 92 771 0034', 'negotiating', 'u1', 9, 58000),
+  mkCustomer('Maple & Finch Retail', 'David Okoye', 'david@maplefinch.com', '+66 63 220 9981', 'active', 'u2', 2),
+  mkCustomer('Siam Textile Group', 'Ploy Anantasin', 'ploy@siamtextile.co', '+66 85 040 7712', 'negotiating', 'u2', 14, 92000),
+  mkCustomer('Northgate Realty', 'Tom Vasquez', 'tom@northgate.com', '+66 87 662 1150', 'inactive', 'u2', 41),
+  mkCustomer('Lotus Fresh Foods', 'Arisa Chan', 'arisa@lotusfresh.co', '+66 90 331 8807', 'active', 'u1', 6),
+  mkCustomer('Riverside Print Co.', 'Somchai Petch', 'somchai@riverprint.com', '+66 84 118 2266', 'lost', 'u2', 50),
+  mkCustomer('Nimbus Cloud Systems', 'Grace Lin', 'grace@nimbuscloud.io', '+66 61 900 4432', 'negotiating', 'u1', 0, 46000),
+  mkCustomer('Golden Teak Furniture', 'Anurak Sae', 'anurak@goldenteak.co', '+66 88 245 6690', 'hold', 'u2', 20),
+  mkCustomer('Everline Insurance', 'Natcha Ruang', 'natcha@everline.co', '+66 62 774 3321', 'active', 'u1', 12),
+  mkCustomer('Coral Bay Hotels', 'James Whitfield', 'james@coralbay.com', '+66 89 556 0021', 'negotiating', 'u2', 5, 124000),
+  mkCustomer('Pinnacle Steelworks', 'Ravi Kumar', 'ravi@pinnaclesteel.co', '+66 91 480 2287', 'inactive', 'u1', 38),
+  mkCustomer('Sunview Solar Co.', 'Malee Thongdee', 'malee@sunviewsolar.co', '+66 80 112 9945', 'active', 'u2', 8)
+];
+
+var activities = [];
+function mkAct(custId, channel, subject, details, outcome, daysBack, userId){
+  seq.a++;
+  activities.push({id:'act'+seq.a, customerId:custId, channel:channel, subject:subject, details:details, outcome:outcome, occurredAt: daysAgo(daysBack, 9+(seq.a%7)), recordedBy:userId});
+}
+mkAct('cus1001','Email','Sent revised proposal v3','Emailed third revision of the annual logistics contract with updated pricing tiers.','Awaiting response',6,'u1');
+mkAct('cus1001','LINE','Budget pending reply','"Budget is under approval. Please contact me next month." — client reply via LINE.','Budget pending',1,'u1');
+mkAct('cus1002','Phone','Quarterly check-in call','Discussed shipment volume increase for Q4 and warehousing needs.','Completed',3,'u1');
+mkAct('cus1002','In Person','On-site review','Walked through new fleet-tracking dashboard with ops manager.','Completed',10,'u2');
+mkAct('cus1003','Quotation','Sent quotation #Q-2291','Quotation for cold-chain freight lane, Bangkok–Chiang Mai.','Follow-up needed',9,'u1');
+mkAct('cus1004','LINE','Reorder confirmed','Confirmed reorder of Q3 SKU set, delivery next Tuesday.','Completed',2,'u2');
+mkAct('cus1004','Phone','Delivery issue resolved','Addressed late delivery complaint, issued partial credit.','Completed',7,'u2');
+mkAct('cus1005','In Person','Contract renewal discussion','Reviewed renewal terms for textile supply contract; client comparing vendors.','Follow-up needed',14,'u2');
+mkAct('cus1006','Email','Re-engagement attempt','Sent check-in email after 5 weeks of silence — no response yet.','No answer',41,'u2');
+mkAct('cus1007','Phone','Weekly produce order','Confirmed standing weekly order, added 2 new SKUs.','Completed',6,'u1');
+mkAct('cus1007','LINE','Delivery time change','Client requested earlier delivery window starting next week.','Completed',1,'u1');
+mkAct('cus1008','Email','Final notice sent','Account marked lost after non-renewal; archived contract.','Completed',50,'u2');
+mkAct('cus1009','Online Meeting','Discovery call','Initial video call — cloud migration needs for 40-seat team.','Follow-up needed',5,'u1');
+mkAct('cus1009','Quotation','Sent pricing sheet','Shared tiered SaaS pricing sheet, awaiting internal review.','Awaiting response',0,'u1');
+mkAct('cus1010','Phone','Payment terms negotiation','Discussed extending payment terms to Net-45.','Budget pending',20,'u2');
+mkAct('cus1011','LINE','Policy renewal reminder','Sent renewal reminder with updated premium quote.','Follow-up needed',12,'u1');
+mkAct('cus1012','Quotation','Proposal sent — beachfront package','Sent group-booking proposal for Dec–Jan season.','Awaiting response',5,'u2');
+mkAct('cus1013','Phone','Attempted contact — no answer','Called twice, left voicemail regarding overdue invoice.','No answer',38,'u1');
+mkAct('cus1014','In Person','Site survey completed','Completed rooftop survey for 50kW solar installation.','Completed',8,'u2');
+mkAct('cus1014','Email','Sent installation timeline','Shared install schedule and permit checklist.','Completed',2,'u2');
+
+var followUps = [];
+function mkFU(custId, title, dueDaysFromNow, assigneeId, priority, done, createdBy){
+  seq.f++;
+  followUps.push({id:'fu'+seq.f, customerId:custId, title:title, description:null, activityId:null, dueAt:daysFromNow(dueDaysFromNow,10),
+    assignedTo:assigneeId, createdBy: createdBy||assigneeId, priority:priority, status: done?'done':'pending', completedAt: done? daysAgo(1):null});
+}
+mkFU('cus1001','Call to confirm budget approval', 22, 'u1', 'normal', false);
+mkFU('cus1003','Follow up on cold-chain quotation', -2, 'u1', 'high', false);
+mkFU('cus1005','Send comparison sheet vs. competitor', -5, 'u2', 'high', false, 'u3');
+mkFU('cus1006','Re-engagement call before churn review', -1, 'u2', 'high', false);
+mkFU('cus1009','Check in after internal pricing review', 3, 'u1', 'medium', false);
+mkFU('cus1010','Confirm Net-45 terms in writing', 1, 'u2', 'medium', false);
+mkFU('cus1011','Finalize policy renewal paperwork', -3, 'u1', 'high', false);
+mkFU('cus1012','Send updated group rate for Jan dates', 4, 'u2', 'normal', false);
+mkFU('cus1013','Escalate overdue invoice to manager', -6, 'u1', 'high', false, 'u3');
+mkFU('cus1002','Quarterly review — schedule next call', 9, 'u1', 'normal', true);
+mkFU('cus1004','Confirm delivery credit applied', 2, 'u2', 'normal', true);
+mkFU('cus1014','Share final inspection report', 5, 'u2', 'medium', false);
+
+var resolvedAlerts = {};
+var statusHistory = [];
+var shSeq = 0;
+
+/* ============================= STATE ============================= */
+var state = { view:'dashboard', currentUserId:'u1', search:'', custFilter:'all', fuTab:'today', fuScope:'mine', drawerCustId:null };
+function role(){ return userOf(state.currentUserId).role; }
+
+/* ============================= HELPERS ============================= */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fmtDate(d){ return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateTime(d){ return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function money(n){ return '$'+Number(n).toLocaleString('en-US'); }
+function relTime(d){
+  var diff = Math.round((now-d)/(1000*60*60*24));
+  if(diff<=0) return 'today'; if(diff===1) return 'yesterday';
+  if(diff<7) return diff+'d ago'; if(diff<31) return Math.round(diff/7)+'w ago';
+  return Math.round(diff/30)+'mo ago';
+}
+function dueLabel(d, done){
+  var diff = Math.round((d-now)/(1000*60*60*24));
+  if(done) return 'Completed '+fmtDate(d);
+  if(diff<0) return 'Overdue by '+Math.abs(diff)+'d';
+  if(diff===0) return 'Due today';
+  if(diff===1) return 'Due tomorrow';
+  return 'Due '+fmtDate(d);
+}
+function showToast(msg){
+  var t=document.getElementById('toast'); t.textContent=msg;
+  t.style.opacity='1'; t.style.transform='translate(-50%,0)';
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(function(){ t.style.opacity='0'; t.style.transform='translate(-50%,10px)'; },2300);
+}
+function closeAllPops(){
+  document.getElementById('bellPop').classList.remove('open');
+  document.getElementById('avatarPop').classList.remove('open');
+}
+
+function visibleCustomers(){
+  return customers.filter(function(c){
+    if(role()==='admin') return true;
+    if(role()==='manager') return c.team===userOf(state.currentUserId).team;
+    return c.ownerId===state.currentUserId;
+  });
+}
+function custActivities(id){ return activities.filter(function(a){return a.customerId===id;}).sort(function(a,b){return b.occurredAt-a.occurredAt;}); }
+function custFollowUps(id){ return followUps.filter(function(f){return f.customerId===id;}).sort(function(a,b){return a.dueAt-b.dueAt;}); }
+function custStatusHistory(id){ return statusHistory.filter(function(h){return h.customerId===id;}).sort(function(a,b){return b.changedAt-a.changedAt;}); }
+function nextFollowUp(id){ var list = custFollowUps(id).filter(function(f){return f.status!=='done';}); return list.length? list[0] : null; }
+function toLocalInputValue(d){ function pad(n){return String(n).length<2?'0'+n:''+n;} return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function visibleFollowUps(){
+  var vis = visibleCustomers();
+  return followUps.filter(function(f){ return vis.some(function(c){return c.id===f.customerId;}); });
+}
+
+function computeAlerts(){
+  var list = [];
+  followUps.forEach(function(f){
+    if(f.status==='done') return;
+    if(f.dueAt < now){
+      var c = customers.find(function(x){return x.id===f.customerId;});
+      if(!c) return;
+      list.push({id:'ov-'+f.id, kind:'overdue', customerId:c.id, followUpId:f.id,
+        title:'Overdue follow-up', message: c.company+' — "'+f.title+'"', generatedAt:f.dueAt});
+    }
+  });
+  customers.forEach(function(c){
+    if(c.status==='inactive' || c.status==='lost') return;
+    var lastAct = custActivities(c.id)[0];
+    var lastDate = lastAct ? lastAct.occurredAt : c.createdAt;
+    var idleDays = Math.round((now-lastDate)/(1000*60*60*24));
+    if(idleDays>=30){
+      list.push({id:'stale-'+c.id, kind:'stale', customerId:c.id, followUpId:null,
+        title:'No activity in '+idleDays+' days', message: c.company+' has gone quiet — still "'+statusOf(c.status).name+'"', generatedAt:lastDate});
+    }
+  });
+  list = list.filter(function(a){ return !resolvedAlerts[a.id]; });
+  return list.filter(function(a){
+    if(role()==='admin') return true;
+    var c = customers.find(function(x){return x.id===a.customerId;});
+    if(!c) return false;
+    if(role()==='manager') return c.team===userOf(state.currentUserId).team;
+    return c.ownerId===state.currentUserId;
+  }).sort(function(a,b){return a.generatedAt-b.generatedAt;});
+}
+function resolveAlert(id){ resolvedAlerts[id]=true; showToast('Alert resolved'); renderAll(); }
+
+/* ============================= SHARED MARKUP ============================= */
+function statusPill(id){
+  var s = statusOf(id);
+  return '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full '+s.badge+' text-[11.5px] font-semibold whitespace-nowrap">'+
+    '<span class="w-1.5 h-1.5 rounded-full '+s.dot+'"></span>'+s.name+'</span>';
+}
+function priorityPill(p){
+  var map = { high:'bg-error/10 text-error', medium:'bg-surface-container text-on-surface-variant', normal:'bg-surface-container-low text-on-surface-variant' };
+  var label = p.charAt(0).toUpperCase()+p.slice(1);
+  return '<span class="px-2 py-0.5 rounded-md '+(map[p]||map.normal)+' text-[11px] font-semibold">'+label+' priority</span>';
+}
+function avatarChip(userId, size){
+  var u = userOf(userId); size = size||24;
+  return '<span class="rounded-full '+avatarClass(userId)+' flex items-center justify-center font-bold shrink-0" style="width:'+size+'px;height:'+size+'px;font-size:'+(size*0.4)+'px">'+u.initials+'</span>';
+}
+function ownerRow(userId){
+  var u = userOf(userId);
+  return '<span class="inline-flex items-center gap-2">'+avatarChip(userId,22)+'<span class="text-[12.5px] text-on-surface-variant">'+esc(u.name)+'</span></span>';
+}
+function companyAvatar(company, size){
+  size = size||32;
+  var initials = company.split(' ').filter(function(w){return w.length && /[A-Za-z0-9]/.test(w[0]);}).slice(0,2).map(function(w){return w[0].toUpperCase();}).join('');
+  return '<div class="rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary shrink-0" style="width:'+size+'px;height:'+size+'px;font-size:'+(size*0.36)+'px">'+initials+'</div>';
+}
+function emptyState(msg, icon){
+  return '<div class="flex flex-col items-center justify-center text-center py-12 text-on-surface-variant gap-2">'+
+    '<span class="material-symbols-outlined text-[30px] text-outline-variant">'+icon+'</span><span class="text-[13px]">'+msg+'</span></div>';
+}
+function lastActivityLine(custId){
+  var acts = custActivities(custId);
+  if(!acts.length) return '<span class="text-outline">No activity yet</span>';
+  var a = acts[0], ch = CHAN[a.channel];
+  return '<span class="inline-flex items-center gap-1.5 '+ '">'+ic(ch.icon,'text-[16px] '+ch.color)+'<span>'+a.channel+' ('+relTime(a.occurredAt)+')</span></span>';
+}
+
+/* ============================= NAV / CHROME ============================= */
+function renderNav(){
+  var el = document.getElementById('nav');
+  el.innerHTML = NAV.map(function(n){
+    var active = state.view===n.id;
+    return '<div class="navitem flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13.5px] cursor-pointer transition '+
+      (active? 'bg-primary-container text-on-primary-container font-semibold':'text-on-surface-variant hover:bg-surface-container hover:text-on-surface')+
+      '" data-view="'+n.id+'">'+ic(n.icon,'text-[19px]')+'<span>'+n.label+'</span></div>';
+  }).join('');
+  el.querySelectorAll('.navitem').forEach(function(el2){ el2.addEventListener('click', function(){ setView(el2.dataset.view); }); });
+}
+function renderRoleSelect(){
+  var sel = document.getElementById('roleSelect');
+  sel.innerHTML = USERS.map(function(u){ return '<option value="'+u.id+'"'+(u.id===state.currentUserId?' selected':'')+'>'+esc(u.name)+'</option>'; }).join('');
+  var u = userOf(state.currentUserId);
+  document.getElementById('btnAvatar').textContent = u.initials;
+}
+function renderAvatarPop(){
+  var u = userOf(state.currentUserId);
+  document.getElementById('avatarPopBody').innerHTML =
+    '<div class="flex items-center gap-3 mb-3">'+avatarChip(u.id,38)+
+    '<div><div class="font-semibold text-[13.5px]">'+esc(u.name)+'</div><div class="text-[11.5px] text-on-surface-variant">'+ROLE_LABEL[u.role]+' · '+esc(u.team)+'</div></div></div>'+
+    '<div class="text-[11.5px] text-on-surface-variant leading-relaxed bg-surface-container-low rounded-lg p-2.5">'+
+    (u.role==='admin' ? 'Admin access — sees every account across all teams.' : u.role==='manager' ? 'Manager access — sees every account owned by '+esc(u.team)+'.' : 'Staff access — sees only accounts you personally own.') +
+    '</div>';
+}
+function setView(v){
+  state.view = v;
+  renderNav();
+  document.querySelectorAll('.view').forEach(function(el){ el.classList.toggle('active', el.id==='view-'+v); });
+  renderAll();
+  document.getElementById('mobileNavBtn') && document.querySelector('.app-sidebar') && document.querySelector('.app-sidebar').classList.remove('open');
+}
+
+/* ============================= DASHBOARD ============================= */
+function renderDashboard(){
+  var el = document.getElementById('view-dashboard');
+  var vis = visibleCustomers();
+  var alertsNow = computeAlerts();
+  var myFU = visibleFollowUps();
+  var overdue = myFU.filter(function(f){ return f.status!=='done' && f.dueAt<now; });
+  var dueToday = myFU.filter(function(f){ return f.status!=='done' && f.dueAt>=startOfToday() && f.dueAt<startOfToday(1); });
+  var pipeline = vis.filter(function(c){return c.status==='negotiating';}).reduce(function(s,c){return s+(c.dealValue||0);},0);
+  var activeCount = vis.filter(function(c){return c.status==='active';}).length;
+  var u = userOf(state.currentUserId);
+
+  var actionRows = alertsNow.slice(0,6);
+
+  el.innerHTML =
+    '<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">'+
+      '<div><div class="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider mb-1">'+
+        '<span>Executive Command</span><span>·</span><span>Customer Pulse Suite</span></div>'+
+      '<h1 class="text-[26px] font-semibold tracking-tight">Welcome back, '+esc(u.name.split(' ')[0])+'</h1>'+
+      '<p class="text-on-surface-variant text-[13px] mt-0.5">'+now.toLocaleDateString('en-GB',{weekday:'long', day:'2-digit', month:'short', year:'numeric'})+' — priority queue for your '+ROLE_LABEL[u.role].toLowerCase()+' view.</p></div>'+
+      '<div class="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-xl shadow-xs shrink-0">'+
+        '<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-[12.5px] font-semibold flex items-center gap-1.5">'+ic('verified','text-[16px]')+'<span>'+ROLE_LABEL[u.role]+' view</span></button>'+
+        '<button id="btnHighPriority" class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container text-[12.5px] font-semibold transition">High priority ('+alertsNow.length+')</button>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">'+
+      statCard('Total managed accounts', vis.length, 'across '+ (role()==='staff'?'your book':role()==='manager'?'your team':'all teams'), 'corporate_fare', 'text-primary bg-surface-container-high') +
+      statCard('Follow-ups today', dueToday.length, overdue.length? overdue.length+' overdue' : 'none overdue', 'calendar_today', 'text-on-secondary-container bg-secondary-container') +
+      statCard('Accounts needing attention', alertsNow.length, alertsNow.length? 'flagged for review':'all quiet', 'warning', alertsNow.length? 'text-error bg-error-container':'text-tertiary bg-tertiary-fixed') +
+      statCard('Pipeline in negotiation', money(pipeline), vis.filter(function(c){return c.status==='negotiating';}).length+' active deals', 'payments', 'text-primary bg-surface-container-high') +
+    '</div>'+
+
+    '<div class="grid grid-cols-1 xl:grid-cols-10 gap-5 items-start">'+
+      '<section class="xl:col-span-7 bg-surface-container-lowest rounded-2xl shadow-xs p-5">'+
+        '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">'+
+          '<div><h2 class="text-[15px] font-semibold">Today\'s action required &amp; alerts</h2>'+
+          '<p class="text-[12px] text-on-surface-variant">Overdue follow-ups and accounts that have gone quiet</p></div>'+
+          '<button id="btnRefreshAlerts" class="h-8 px-3 bg-surface-container rounded-lg text-[12px] font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1 shrink-0">'+ic('refresh','text-[16px]')+'<span>Refresh</span></button>'+
+        '</div>'+
+        '<div id="actionTableWrap">'+ actionTableHtml(actionRows) +'</div>'+
+        (alertsNow.length>actionRows.length ? '<div class="mt-3 text-[12px] text-on-surface-variant text-center">+'+(alertsNow.length-actionRows.length)+' more in <button class="text-primary font-semibold hover:underline" data-goto="activity">Activity Log</button></div>' : '') +
+      '</section>'+
+
+      '<div class="xl:col-span-3 flex flex-col gap-5">'+
+        dailyTasksWidget() +
+        quickLoggerWidget() +
+      '</div>'+
+    '</div>'+
+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-5 mt-5">'+
+      '<div class="flex items-center justify-between mb-3">'+
+        '<div><h2 class="text-[15px] font-semibold">Recent activity</h2><p class="text-[12px] text-on-surface-variant">Latest touchpoints across every channel</p></div>'+
+        '<span class="text-[11.5px] text-on-surface-variant">'+activities.filter(function(a){return vis.some(function(c){return c.id===a.customerId;});}).length+' total</span>'+
+      '</div>'+
+      '<div id="dashFeed">'+ feedHtml() +'</div>'+
+    '</div>';
+
+  wireCommon(el);
+  document.getElementById('btnRefreshAlerts').addEventListener('click', function(){ showToast('Alerts refreshed'); renderAll(); });
+}
+function startOfToday(offsetDays){ var d=new Date(now); d.setDate(d.getDate()+(offsetDays||0)); d.setHours(0,0,0,0); return d; }
+
+function statCard(label, value, note, icon, iconCls){
+  return '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4 flex flex-col gap-2.5">'+
+    '<div class="flex items-center justify-between">'+
+      '<span class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">'+label+'</span>'+
+      '<div class="w-8 h-8 rounded-full '+iconCls+' flex items-center justify-center shrink-0">'+ic(icon,'text-[17px]')+'</div>'+
+    '</div>'+
+    '<div class="text-[25px] font-semibold tnum leading-none">'+value+'</div>'+
+    '<span class="text-[11.5px] text-on-surface-variant">'+note+'</span></div>';
+}
+
+function actionTableHtml(rows){
+  if(!rows.length) return emptyState('All quiet — nothing needs attention right now.', 'task_alt');
+  return '<div class="flex flex-col divide-y divide-outline-variant/30">' + rows.map(function(a){
+    var c = customers.find(function(x){return x.id===a.customerId;});
+    var isOverdue = a.kind==='overdue';
+    return '<div class="py-3 flex flex-wrap items-center gap-3">'+
+      companyAvatar(c.company,34)+
+      '<div class="min-w-[160px] flex-1">'+
+        '<div class="font-semibold text-[13px] hover:text-primary cursor-pointer" data-open-cust="'+c.id+'">'+esc(c.company)+'</div>'+
+        '<div class="text-[11.5px] text-on-surface-variant">'+esc(c.contact)+'</div>'+
+      '</div>'+
+      '<div class="w-28">'+statusPill(c.status)+'</div>'+
+      '<div class="min-w-[150px] text-[12px] '+(isOverdue?'text-error font-semibold':'text-on-surface-variant')+' flex items-center gap-1">'+
+        ic(isOverdue?'schedule':'priority_high','text-[15px]')+'<span>'+esc(a.title)+'</span></div>'+
+      '<div class="flex items-center gap-1.5 ml-auto">'+
+        (isOverdue?
+          '<button class="h-8 px-3 bg-primary text-on-primary rounded-lg text-[12px] font-semibold hover:bg-primary-container transition" data-log-activity="'+c.id+'">Log Activity</button>'+
+          '<button class="h-8 px-2.5 bg-surface-container hover:bg-surface-container-high rounded-lg text-[12px] font-semibold transition" data-mark-fu-done="'+a.followUpId+'">Mark done</button>'
+        : '<button class="h-8 px-3 bg-surface-container hover:bg-surface-container-high rounded-lg text-[12px] font-semibold transition" data-log-activity="'+c.id+'">Send check-in</button>')+
+        '<button class="h-8 px-2 text-outline hover:text-on-surface rounded-lg" data-resolve-alert="'+a.id+'" title="Dismiss">'+ic('close','text-[16px]')+'</button>'+
+      '</div></div>';
+  }).join('') + '</div>';
+}
+
+function dailyTasksWidget(){
+  var mine = followUps.filter(function(f){ return f.assignedTo===state.currentUserId && f.status!=='done' && f.dueAt < startOfToday(1); })
+    .concat(followUps.filter(function(f){ return f.assignedTo===state.currentUserId && f.status==='done'; }).slice(-2));
+  var doneCount = mine.filter(function(f){return f.status==='done';}).length;
+  return '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4">'+
+    '<div class="flex items-center justify-between mb-1">'+
+      '<div class="flex items-center gap-1.5">'+ic('task_alt','text-primary text-[19px]')+'<h3 class="text-[14px] font-semibold">My daily tasks</h3></div>'+
+      '<span class="text-[11px] font-semibold bg-surface-container px-2 py-0.5 rounded text-on-surface-variant">'+doneCount+' / '+mine.length+' done</span>'+
+    '</div>'+
+    '<p class="text-[11.5px] text-on-surface-variant mb-3">Due today or overdue, assigned to you</p>'+
+    '<div class="flex flex-col gap-1" id="dailyTaskList">'+
+      (mine.length? mine.map(function(f){
+        var c = customers.find(function(x){return x.id===f.customerId;});
+        var overdue = f.status!=='done' && f.dueAt<now;
+        return '<label class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-surface-container-low transition cursor-pointer">'+
+          '<input type="checkbox" data-check-fu="'+f.id+'" '+(f.status==='done'?'checked':'')+' class="mt-1 w-4 h-4 rounded accent-[#2563eb] cursor-pointer">'+
+          '<div class="min-w-0"><span class="text-[12.5px] block truncate '+(f.status==='done'?'line-through text-on-surface-variant':'font-medium')+'">'+esc(f.title)+' · '+esc(c?c.company:'')+'</span>'+
+          '<span class="text-[11px] '+(overdue?'text-error font-semibold':'text-outline')+'">'+dueLabel(f.dueAt, f.status==='done')+'</span></div></label>';
+      }).join('') : '<div class="text-[12px] text-on-surface-variant py-2">Nothing due today. Nice work.</div>')+
+    '</div></div>';
+}
+
+function quickLoggerWidget(){
+  var vis = visibleCustomers();
+  return '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4">'+
+    '<div class="flex items-center gap-1.5 mb-1">'+ic('edit_note','text-primary text-[19px]')+'<h3 class="text-[14px] font-semibold">Quick activity logger</h3></div>'+
+    '<p class="text-[11.5px] text-on-surface-variant mb-3">Record a touchpoint straight to the timeline</p>'+
+    '<div class="flex flex-col gap-2.5">'+
+      '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Account</label>'+
+        '<select id="qlCustomer" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container">'+
+          vis.map(function(c){return '<option value="'+c.id+'">'+esc(c.company)+' ('+esc(c.contact)+')</option>';}).join('')+
+        '</select></div>'+
+      '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Channel</label>'+
+        '<div class="grid grid-cols-3 gap-1.5" id="qlChannels">'+ CHANNELS.map(function(ch,i){
+          return '<button type="button" data-ql-chan="'+ch+'" title="'+ch+'" class="ql-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition '+(i===0?'bg-tertiary-fixed text-on-tertiary-fixed':'bg-surface-container-low text-on-surface-variant hover:bg-surface-container')+'">'+ic(CHAN[ch].icon,'text-[14px]')+'<span class="truncate">'+CHAN_SHORT[ch]+'</span></button>';
+        }).join('')+
+      '</div></div>'+
+      '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Note</label>'+
+        '<textarea id="qlNote" rows="3" class="w-full p-2 rounded-lg bg-surface-container-low text-[12.5px] resize-none focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Sent quotation v2 via LINE; waiting on finance approval..."></textarea></div>'+
+      '<button id="qlSubmit" class="h-9 bg-primary-container hover:bg-primary text-on-primary-container rounded-lg text-[12.5px] font-semibold flex items-center justify-center gap-1.5 transition">'+ic('send','text-[17px]')+'<span>Record activity</span></button>'+
+    '</div></div>';
+}
+
+function feedHtml(){
+  var vis = visibleCustomers();
+  var items = activities.filter(function(a){ return vis.some(function(c){return c.id===a.customerId;}); })
+    .sort(function(a,b){return b.occurredAt-a.occurredAt;}).slice(0,8);
+  if(!items.length) return emptyState('No logged activity yet.', 'history');
+  return '<div class="flex flex-col divide-y divide-outline-variant/30">' + items.map(function(a){
+    var c = customers.find(function(x){return x.id===a.customerId;}); var ch = CHAN[a.channel];
+    return '<div class="py-3 flex items-start gap-3">'+
+      '<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">'+ic(ch.icon,'text-[16px] '+ch.color)+'</div>'+
+      '<div class="min-w-0 flex-1">'+
+        '<div class="flex items-baseline gap-1.5 flex-wrap">'+
+          '<span class="font-semibold text-[12.5px] hover:text-primary cursor-pointer" data-open-cust="'+c.id+'">'+esc(c.company)+'</span>'+
+          '<span class="text-[11px] text-outline">'+a.channel+'</span>'+
+          '<span class="ml-auto text-[11px] text-outline tnum">'+relTime(a.occurredAt)+'</span>'+
+        '</div>'+
+        '<div class="text-[12.5px] text-on-surface-variant">'+esc(a.subject)+'</div>'+
+      '</div></div>';
+  }).join('') + '</div>';
+}
+
+/* ============================= CUSTOMERS ============================= */
+function renderCustomers(){
+  var el = document.getElementById('view-customers');
+  var all = visibleCustomers();
+  var alertsNow = computeAlerts();
+
+  el.innerHTML =
+    '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">'+
+      '<div><div class="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider mb-1"><span>'+ic('cloud_done','text-[14px]')+'</span><span>Directory Database · Live feed</span></div>'+
+      '<h1 class="text-[24px] font-semibold tracking-tight">Customer Accounts</h1></div>'+
+      '<div class="flex items-center gap-2">'+
+        '<button id="btnExportCsv" class="h-9 px-3.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 hover:bg-surface-container-low shadow-xs">'+ic('file_download','text-[17px]')+'<span>Export CSV</span></button>'+
+        '<button id="btnNewCustomer" class="h-9 px-3.5 bg-primary text-on-primary rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 hover:bg-primary-container transition">'+ic('add','text-[18px]')+'<span>Add customer</span></button>'+
+      '</div></div>'+
+
+    '<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-5">'+
+      statCard('Total records', all.length, role()==='staff'?'assigned to you':'in scope', 'inventory_2', 'text-primary bg-surface-container-high') +
+      statCard('Active retainers', all.filter(function(c){return c.status==='active';}).length, 'healthy accounts', 'check_circle', 'text-tertiary bg-tertiary-fixed') +
+      statCard('In negotiation', all.filter(function(c){return c.status==='negotiating';}).length, 'open deals', 'handshake', 'text-primary bg-secondary-container') +
+      statCard('Attention needed', alertsNow.length, 'flagged now', 'notifications_active', alertsNow.length? 'text-error bg-error-container':'text-tertiary bg-tertiary-fixed') +
+    '</div>'+
+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-3 flex flex-col lg:flex-row lg:items-center gap-3 mb-4">'+
+      '<div class="relative w-full lg:w-72">'+ic('search','text-outline absolute left-3 top-2 text-[18px]')+
+        '<input id="custSearch" class="w-full h-8 pl-9 pr-3 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Filter by company, contact, code..."></div>'+
+      '<div class="flex items-center gap-1.5 flex-wrap" id="statusChips">'+
+        chip('all','All', state.custFilter==='all') + STATUSES.map(function(s){ return chip(s.id, s.name, state.custFilter===s.id); }).join('') +
+      '</div>'+
+      '<span class="ml-auto text-[11.5px] text-on-surface-variant hidden lg:block">Scope: '+ROLE_LABEL[role()]+(role()!=='admin' ? ' · '+ (role()==='manager'? userOf(state.currentUserId).team : userOf(state.currentUserId).name) : '')+'</span>'+
+    '</div>'+
+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs overflow-hidden">'+
+      '<div class="overflow-x-auto"><table class="w-full text-left" style="min-width:720px">'+
+        '<thead><tr class="bg-surface-container-low text-[10.5px] uppercase tracking-wider text-on-surface-variant font-semibold">'+
+          '<th class="py-2.5 px-4">Company &amp; code</th><th class="py-2.5 px-3">Primary contact</th><th class="py-2.5 px-3">Owner</th>'+
+          '<th class="py-2.5 px-3">Lifecycle</th><th class="py-2.5 px-3">Last touchpoint</th></tr></thead>'+
+        '<tbody id="custRows"></tbody>'+
+      '</table></div>'+
+      '<div id="custEmpty"></div>'+
+      '<div class="px-4 py-3 bg-surface-container-low text-[12px] text-on-surface-variant flex items-center justify-between" id="custFooter"></div>'+
+    '</div>';
+
+  wireCommon(el);
+  document.getElementById('custSearch').value = state.search;
+  document.getElementById('custSearch').addEventListener('input', function(e){ state.search=e.target.value; renderCustomers(); });
+  document.getElementById('btnNewCustomer').addEventListener('click', openNewCustomerModal);
+  document.getElementById('btnExportCsv').addEventListener('click', function(){ showToast('Demo mode - export disabled'); });
+  el.querySelectorAll('[data-chip]').forEach(function(c){ c.addEventListener('click', function(){ state.custFilter=c.dataset.chip; renderCustomers(); }); });
+
+  renderCustomerRows();
+}
+function chip(id,label,active){
+  return '<button data-chip="'+id+'" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition '+(active?'bg-on-surface text-white':'bg-surface-container-low text-on-surface-variant hover:bg-surface-container')+'">'+label+'</button>';
+}
+function renderCustomerRows(){
+  var vis = visibleCustomers();
+  var q = state.search.trim().toLowerCase();
+  if(q) vis = vis.filter(function(c){ return (c.company+' '+c.contact+' '+c.code+' '+c.phone).toLowerCase().indexOf(q)>-1; });
+  if(state.custFilter!=='all') vis = vis.filter(function(c){ return c.status===state.custFilter; });
+  vis = vis.slice().sort(function(a,b){return b.updatedAt-a.updatedAt;});
+
+  var tbody = document.getElementById('custRows');
+  tbody.innerHTML = vis.map(function(c){
+    return '<tr class="border-t border-outline-variant/30 hover:bg-surface-container-low cursor-pointer transition" data-open-cust="'+c.id+'">'+
+      '<td class="py-3 px-4"><div class="flex items-center gap-2.5">'+companyAvatar(c.company,32)+
+        '<div><div class="font-semibold text-[13px] leading-tight">'+esc(c.company)+'</div><span class="text-[11px] text-on-surface-variant">'+c.code+'</span></div></div></td>'+
+      '<td class="py-3 px-3 text-[12.5px]">'+esc(c.contact)+'<div class="text-[11px] text-on-surface-variant">'+esc(c.email)+'</div></td>'+
+      '<td class="py-3 px-3">'+ownerRow(c.ownerId)+'</td>'+
+      '<td class="py-3 px-3">'+statusPill(c.status)+'</td>'+
+      '<td class="py-3 px-3 text-[12px]">'+lastActivityLine(c.id)+'</td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('custEmpty').innerHTML = vis.length? '' : emptyState('No customers match this view.', 'corporate_fare');
+  document.getElementById('custFooter').innerHTML = '<span>Showing <b class="tnum">'+vis.length+'</b> of <b class="tnum">'+visibleCustomers().length+'</b> accounts</span>'+
+    '<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>Live CRM feed</span>';
+  tbody.querySelectorAll('[data-open-cust]').forEach(function(tr){ tr.addEventListener('click', function(){ openDrawer(tr.dataset.openCust); }); });
+}
+
+/* ============================= FOLLOW-UPS ============================= */
+function renderFollowUps(){
+  var el = document.getElementById('view-followups');
+  var all = visibleFollowUps();
+  var mine = all.filter(function(f){ return state.fuScope==='mine'? f.assignedTo===state.currentUserId : true; });
+  var overdue = mine.filter(function(f){return f.status!=='done' && f.dueAt<now;});
+  var today = mine.filter(function(f){return f.status!=='done' && f.dueAt>=startOfToday() && f.dueAt<startOfToday(1) && f.dueAt>=now || (f.status!=='done' && f.dueAt>=startOfToday() && f.dueAt<startOfToday(1));});
+  var upcoming = mine.filter(function(f){return f.status!=='done' && f.dueAt>=startOfToday(1);});
+  var completed = mine.filter(function(f){return f.status==='done';});
+  var tabs = [
+    {id:'today', label:'Due today', count:today.length, list:today},
+    {id:'upcoming', label:'Upcoming', count:upcoming.length, list:upcoming},
+    {id:'overdue', label:'Overdue', count:overdue.length, list:overdue},
+    {id:'completed', label:'Completed', count:completed.length, list:completed}
+  ];
+  var active = tabs.find(function(t){return t.id===state.fuTab;}) || tabs[0];
+  var completedThisWeek = followUps.filter(function(f){ return f.status==='done' && f.completedAt && (now-f.completedAt)<7*24*3600*1000 && all.indexOf(f)>-1; });
+  var totalScoped = mine.length;
+  var doneScoped = mine.filter(function(f){return f.status==='done';}).length;
+  var onTimePct = totalScoped? Math.round(doneScoped/totalScoped*100) : 0;
+  var upcomingReminders = mine.filter(function(f){return f.status!=='done';}).sort(function(a,b){return a.dueAt-b.dueAt;}).slice(0,3);
+
+  el.innerHTML =
+    '<div class="flex flex-col gap-4 mb-5">'+
+      '<div class="flex flex-col md:flex-row md:items-center justify-between gap-3">'+
+        '<div><div class="flex items-center gap-1.5 text-outline text-[11px] font-semibold uppercase tracking-wider mb-1">'+ic('pending_actions','text-[15px]')+'<span>Cadence &amp; account outreach</span></div>'+
+        '<div class="flex items-baseline gap-2"><h1 class="text-[24px] font-semibold tracking-tight">Follow-up Tasks</h1><span class="text-[12.5px] text-on-surface-variant font-medium">'+ROLE_LABEL[role()]+' pipeline</span></div></div>'+
+        '<button id="btnCreateTask" class="h-9 px-3.5 bg-primary text-on-primary rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 hover:bg-primary-container transition shrink-0">'+ic('add_task','text-[18px]')+'<span>Create task</span></button>'+
+      '</div>'+
+      '<div class="flex items-center gap-1.5 overflow-x-auto pb-0.5" id="fuTabs">'+
+        tabs.map(function(t){
+          var isActive = t.id===active.id;
+          var tone = t.id==='overdue' ? (isActive?'bg-error-container text-on-error-container':'text-error hover:bg-error-container/30') : (isActive?'bg-surface-container-lowest text-primary shadow-xs':'text-on-surface-variant hover:bg-surface-container-lowest/70');
+          return '<button data-fu-tab="'+t.id+'" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition '+tone+'">'+
+            '<span>'+t.label+'</span><span class="px-1.5 py-0.5 rounded-full text-[10.5px] '+(isActive?'bg-primary/10 text-primary':'bg-surface-container text-on-surface-variant')+'">'+t.count+'</span></button>';
+        }).join('') +
+      '</div>'+
+    '</div>'+
+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-2.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-5">'+
+      '<div class="inline-flex p-1 bg-surface-container-low rounded-xl w-fit">'+
+        '<button data-fu-scope="mine" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition '+(state.fuScope==='mine'?'bg-surface-container-lowest shadow-xs':'text-on-surface-variant')+'">Assigned to me</button>'+
+        '<button data-fu-scope="team" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition '+(state.fuScope==='team'?'bg-surface-container-lowest shadow-xs':'text-on-surface-variant')+'">'+(role()==='staff'?'Team view':'All in scope')+'</button>'+
+      '</div>'+
+      '<div class="relative w-full lg:w-72"><span class="material-symbols-outlined text-outline absolute left-3 top-2 text-[17px]">search</span>'+
+        '<input id="fuSearch" class="w-full h-8 pl-9 pr-3 rounded-lg bg-surface-container-low text-[12px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Filter tasks, accounts..."></div>'+
+    '</div>'+
+
+    '<div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">'+
+      '<div class="xl:col-span-8 flex flex-col gap-3" id="fuCards"></div>'+
+      '<div class="xl:col-span-4 flex flex-col gap-5">'+
+        '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4">'+
+          '<div class="flex items-center justify-between mb-2"><span class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Completion rate</span>'+
+          '<span class="text-[10.5px] font-semibold bg-tertiary-fixed text-tertiary px-2 py-0.5 rounded-full">Live</span></div>'+
+          '<div class="text-[26px] font-semibold tnum mb-2">'+onTimePct+'%</div>'+
+          '<div class="w-full h-2 bg-surface-container-low rounded-full overflow-hidden mb-3"><div class="h-full bg-primary rounded-full" style="width:'+onTimePct+'%"></div></div>'+
+          '<div class="grid grid-cols-3 gap-2 text-center">'+
+            statMini('Total', totalScoped) + statMini('Done', doneScoped) + statMini('Open', totalScoped-doneScoped) +
+          '</div></div>'+
+        '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4">'+
+          '<div class="flex items-center gap-1.5 mb-3">'+ic('notifications_active','text-primary text-[18px]')+'<h3 class="text-[13.5px] font-semibold">Upcoming reminders</h3></div>'+
+          '<div class="flex flex-col divide-y divide-outline-variant/30">'+
+          (upcomingReminders.length? upcomingReminders.map(function(f){
+            var c = customers.find(function(x){return x.id===f.customerId;});
+            return '<div class="py-2 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>'+
+              '<div class="min-w-0"><div class="text-[12px] font-semibold truncate">'+esc(c?c.company:'')+'</div>'+
+              '<div class="text-[11px] text-on-surface-variant truncate">'+esc(f.title)+'</div></div>'+
+              '<span class="ml-auto text-[11px] text-outline whitespace-nowrap">'+dueLabel(f.dueAt,false)+'</span></div>';
+          }).join('') : '<div class="text-[12px] text-on-surface-variant py-1">Nothing scheduled.</div>')+
+          '</div></div>'+
+      '</div>'+
+    '</div>';
+
+  wireCommon(el);
+  el.querySelectorAll('[data-fu-tab]').forEach(function(b){ b.addEventListener('click', function(){ state.fuTab=b.dataset.fuTab; renderFollowUps(); }); });
+  el.querySelectorAll('[data-fu-scope]').forEach(function(b){ b.addEventListener('click', function(){ state.fuScope=b.dataset.fuScope; renderFollowUps(); }); });
+  document.getElementById('btnCreateTask').addEventListener('click', function(){ openLogModal(visibleCustomers()[0] ? visibleCustomers()[0].id : null, {mode:'task'}); });
+  document.getElementById('fuSearch').addEventListener('input', function(e){ renderFuCards(active.list, e.target.value); });
+  renderFuCards(active.list, '');
+}
+function statMini(label, value){
+  return '<div class="bg-surface-container-low rounded-lg py-2"><div class="text-[15px] font-semibold tnum">'+value+'</div><div class="text-[10px] text-on-surface-variant">'+label+'</div></div>';
+}
+function renderFuCards(list, q){
+  q = (q||'').trim().toLowerCase();
+  var wrap = document.getElementById('fuCards');
+  var filtered = list.filter(function(f){
+    if(!q) return true;
+    var c = customers.find(function(x){return x.id===f.customerId;});
+    return (f.title+' '+(c?c.company:'')).toLowerCase().indexOf(q)>-1;
+  }).sort(function(a,b){return a.dueAt-b.dueAt;});
+  if(!filtered.length){ wrap.innerHTML = emptyState('No tasks in this view.', 'task_alt'); return; }
+  wrap.innerHTML = filtered.map(fuCardHtml).join('');
+  wrap.querySelectorAll('[data-complete-fu]').forEach(function(b){ b.addEventListener('click', function(){ toggleFollowUp(b.dataset.completeFu); }); });
+  wrap.querySelectorAll('[data-log-outcome]').forEach(function(b){ b.addEventListener('click', function(){ openLogModal(b.dataset.logOutcome, {followUpId:b.dataset.fuId}); }); });
+  wrap.querySelectorAll('[data-reschedule]').forEach(function(b){ b.addEventListener('click', function(){ openRescheduleModal(b.dataset.reschedule); }); });
+  wrap.querySelectorAll('[data-open-cust]').forEach(function(t){ t.addEventListener('click', function(){ openDrawer(t.dataset.openCust); }); });
+}
+function fuCardHtml(f){
+  var c = customers.find(function(x){return x.id===f.customerId;});
+  var overdue = f.status!=='done' && f.dueAt<now;
+  var linkedAct = f.activityId ? activities.find(function(a){return a.id===f.activityId;}) : null;
+  var lastAct = linkedAct || custActivities(f.customerId)[0];
+  var requestedNote = (f.createdBy && f.createdBy!==f.assignedTo) ? '<span class="text-outline"> · requested by '+esc(userOf(f.createdBy).name)+'</span>' : '';
+  var badge = f.status==='done' ? '<span class="px-2.5 py-1 rounded-md bg-tertiary-fixed text-tertiary text-[11px] font-semibold flex items-center gap-1">'+ic('check_circle','text-[14px]')+'<span>Completed</span></span>'
+    : overdue ? '<span class="px-2.5 py-1 rounded-md bg-error-container text-on-error-container text-[11px] font-semibold flex items-center gap-1">'+ic('schedule','text-[14px]')+'<span>'+dueLabel(f.dueAt,false)+'</span></span>'
+    : '<span class="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-fixed text-[11px] font-semibold flex items-center gap-1">'+ic('alarm','text-[14px]')+'<span>'+dueLabel(f.dueAt,false)+'</span></span>';
+  return '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4 flex flex-col gap-3">'+
+    '<div class="flex flex-wrap items-center justify-between gap-2">'+
+      '<div class="flex items-center gap-2 flex-wrap">'+badge+priorityPill(f.priority)+'<span class="text-outline text-[11px]">·</span><span class="text-[11px] text-outline tracking-wide">'+c.code+'</span></div>'+
+      '<div class="flex items-center gap-1.5 text-[11.5px] text-on-surface-variant">'+avatarChip(f.assignedTo,22)+'<span class="font-medium text-on-surface">'+esc(userOf(f.assignedTo).name)+'</span>'+requestedNote+'</div>'+
+    '</div>'+
+    '<div><div class="flex items-baseline gap-2 flex-wrap"><span class="font-semibold text-[14.5px] hover:text-primary cursor-pointer" data-open-cust="'+c.id+'">'+esc(c.company)+'</span>'+
+      '<span class="text-[12px] text-outline">'+esc(c.contact)+'</span></div>'+
+      '<p class="text-[12.5px] text-on-surface-variant leading-relaxed mt-0.5">'+esc(f.title)+'</p>'+
+      (f.description? '<p class="text-[12px] text-on-surface-variant mt-0.5">'+esc(f.description)+'</p>':'')+'</div>'+
+    '<div class="bg-surface-container-low rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">'+
+      (lastAct ? '<div class="flex items-center gap-1.5 text-[12px] text-on-surface-variant">'+
+        '<span class="w-6 h-6 rounded bg-surface-container-lowest flex items-center justify-center shadow-xs">'+ic(CHAN[lastAct.channel].icon,'text-[15px] '+CHAN[lastAct.channel].color)+'</span>'+
+        '<span>'+(linkedAct? 'Created from: "'+esc(linkedAct.subject)+'"' : 'Last touch via '+lastAct.channel+' · '+relTime(lastAct.occurredAt))+'</span></div>' : '<span class="text-[12px] text-outline">No prior activity</span>')+
+      '<div class="flex items-center gap-1.5 ml-auto">'+
+        (f.status==='done' ? '<span class="text-[12px] text-tertiary font-semibold px-2">Done '+relTime(f.completedAt)+'</span>' :
+        '<button class="px-2.5 py-1 rounded-lg text-on-surface-variant hover:bg-surface-container-lowest text-[12px] font-semibold transition" data-reschedule="'+f.id+'">Reschedule</button>'+
+        '<button class="px-2.5 py-1 rounded-lg text-primary hover:bg-surface-container-lowest text-[12px] font-semibold transition" data-log-outcome="'+c.id+'" data-fu-id="'+f.id+'">Log outcome</button>'+
+        '<button class="px-3 py-1 bg-primary text-on-primary rounded-lg text-[12px] font-semibold flex items-center gap-1 hover:bg-primary-container transition" data-complete-fu="'+f.id+'">'+ic('check_circle','text-[15px]')+'<span>Complete</span></button>')+
+      '</div></div></div>';
+}
+function toggleFollowUp(id){
+  var f = followUps.find(function(x){return x.id===id;});
+  if(!f) return;
+  f.status = f.status==='done' ? 'pending' : 'done';
+  f.completedAt = f.status==='done' ? new Date() : null;
+  showToast(f.status==='done' ? 'Follow-up marked complete' : 'Follow-up reopened');
+  renderAll(true);
+}
+
+/* ============================= ACTIVITY LOG ============================= */
+function renderActivityLog(){
+  var el = document.getElementById('view-activity');
+  var vis = visibleCustomers();
+  var all = activities.filter(function(a){ return vis.some(function(c){return c.id===a.customerId;}); }).sort(function(a,b){return b.occurredAt-a.occurredAt;});
+
+  el.innerHTML =
+    '<div class="flex items-center justify-between gap-3 mb-5">'+
+      '<div><div class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider mb-1">Full history · '+ROLE_LABEL[role()]+' scope</div>'+
+      '<h1 class="text-[24px] font-semibold tracking-tight">Activity Log</h1></div>'+
+      '<span class="text-[12.5px] text-on-surface-variant tnum">'+all.length+' logged touchpoints</span>'+
+    '</div>'+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-3 flex flex-wrap items-center gap-2 mb-4">'+
+      '<span class="text-[11px] font-semibold text-outline uppercase tracking-wider pl-1">Channel</span>'+
+      chip('all','All', state.actChanFilter===undefined||state.actChanFilter==='all') +
+      CHANNELS.map(function(ch){ return '<button data-chan-chip="'+ch+'" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition flex items-center gap-1 '+(state.actChanFilter===ch?'bg-on-surface text-white':'bg-surface-container-low text-on-surface-variant hover:bg-surface-container')+'">'+ic(CHAN[ch].icon,'text-[15px]')+ch+'</button>'; }).join('')+
+      '<div class="relative ml-auto w-full sm:w-64">'+ic('search','text-outline absolute left-3 top-2 text-[17px]')+
+      '<input id="actSearch" class="w-full h-8 pl-9 pr-3 rounded-lg bg-surface-container-low text-[12px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Filter by company or subject..."></div>'+
+    '</div>'+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-4" id="fullFeedWrap"></div>';
+
+  wireCommon(el);
+  el.querySelectorAll('[data-chip]').forEach(function(c){ c.addEventListener('click', function(){ state.actChanFilter='all'; renderActivityLog(); }); });
+  el.querySelectorAll('[data-chan-chip]').forEach(function(c){ c.addEventListener('click', function(){ state.actChanFilter=c.dataset.chanChip; renderActivityLog(); }); });
+  document.getElementById('actSearch').addEventListener('input', function(e){ renderFullFeed(all, e.target.value); });
+  renderFullFeed(all, '');
+}
+function renderFullFeed(all, q){
+  q=(q||'').trim().toLowerCase();
+  var filtered = all.filter(function(a){
+    if(state.actChanFilter && state.actChanFilter!=='all' && a.channel!==state.actChanFilter) return false;
+    if(!q) return true;
+    var c = customers.find(function(x){return x.id===a.customerId;});
+    return ((c?c.company:'')+' '+a.subject).toLowerCase().indexOf(q)>-1;
+  });
+  var wrap = document.getElementById('fullFeedWrap');
+  if(!filtered.length){ wrap.innerHTML = emptyState('No matching activity.', 'history'); return; }
+  wrap.innerHTML = '<div class="flex flex-col divide-y divide-outline-variant/30">' + filtered.map(function(a){
+    var c = customers.find(function(x){return x.id===a.customerId;}); var ch = CHAN[a.channel];
+    return '<div class="py-3.5 flex items-start gap-3">'+
+      '<div class="w-9 h-9 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">'+ic(ch.icon,'text-[17px] '+ch.color)+'</div>'+
+      '<div class="min-w-0 flex-1">'+
+        '<div class="flex items-baseline gap-2 flex-wrap">'+
+          '<span class="font-semibold text-[13px] hover:text-primary cursor-pointer" data-open-cust="'+c.id+'">'+esc(c.company)+'</span>'+
+          '<span class="text-[11px] text-outline">by '+userOf(a.recordedBy).name+'</span>'+
+          '<span class="ml-auto text-[11.5px] text-outline tnum">'+fmtDateTime(a.occurredAt)+'</span>'+
+        '</div>'+
+        '<div class="text-[13px] font-medium mt-0.5">'+esc(a.subject)+'</div>'+
+        (a.details? '<div class="text-[12.5px] text-on-surface-variant mt-0.5">'+esc(a.details)+'</div>' : '')+
+        '<span class="inline-block mt-1.5 text-[11px] px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium">'+esc(a.outcome)+'</span>'+
+      '</div></div>';
+  }).join('') + '</div>';
+  wrap.querySelectorAll('[data-open-cust]').forEach(function(t){ t.addEventListener('click', function(){ openDrawer(t.dataset.openCust); }); });
+}
+
+/* ============================= REPORTS ============================= */
+function renderReports(){
+  var el = document.getElementById('view-reports');
+  var vis = visibleCustomers();
+  var total = vis.length || 1;
+  var byStatus = STATUSES.map(function(s){ return {s:s, count:vis.filter(function(c){return c.status===s.id;}).length}; });
+  var visActs = activities.filter(function(a){ return vis.some(function(c){return c.id===a.customerId;}); });
+  var byChan = CHANNELS.map(function(ch){ return {ch:ch, count:visActs.filter(function(a){return a.channel===ch;}).length}; });
+  var maxChan = Math.max.apply(null, byChan.map(function(b){return b.count;}).concat([1]));
+  var owners = (role()==='admin'? USERS.filter(function(u){return u.role!=='admin';}) : role()==='manager'? USERS.filter(function(u){return u.team===userOf(state.currentUserId).team && u.role==='staff';}) : [userOf(state.currentUserId)]);
+  var fuVis = visibleFollowUps();
+
+  el.innerHTML =
+    '<div class="mb-5"><div class="text-on-surface-variant text-[11px] font-semibold uppercase tracking-wider mb-1">Analytics · '+ROLE_LABEL[role()]+' scope</div>'+
+    '<h1 class="text-[24px] font-semibold tracking-tight">Reports</h1></div>'+
+    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">'+
+      '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-5">'+
+        '<h2 class="text-[14px] font-semibold mb-3">Status distribution</h2>'+
+        '<div class="flex h-3.5 rounded-full overflow-hidden border border-outline-variant/40">'+
+          byStatus.map(function(b){ var w=b.count/total*100; return w>0? '<span class="h-full '+b.s.dot+'" style="width:'+w+'%"></span>':''; }).join('')+
+        '</div>'+
+        '<div class="flex flex-wrap gap-x-4 gap-y-2 mt-4">'+
+          byStatus.map(function(b){ return '<div class="flex items-center gap-1.5 text-[12px] text-on-surface-variant"><span class="w-2 h-2 rounded-sm '+b.s.dot+'"></span>'+b.s.name+' <b class="text-on-surface tnum">'+b.count+'</b></div>'; }).join('')+
+        '</div></div>'+
+      '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-5">'+
+        '<h2 class="text-[14px] font-semibold mb-3">Touchpoints by channel</h2>'+
+        '<div class="flex flex-col gap-2.5">'+
+          byChan.map(function(b){ return '<div class="flex items-center gap-3">'+
+            '<span class="w-28 shrink-0 text-[12px] text-on-surface-variant flex items-center gap-1.5 truncate" title="'+b.ch+'">'+ic(CHAN[b.ch].icon,'text-[15px] shrink-0 '+CHAN[b.ch].color)+'<span class="truncate">'+b.ch+'</span></span>'+
+            '<div class="flex-1 h-2.5 bg-surface-container-low rounded-full overflow-hidden"><div class="h-full bg-primary-container rounded-full" style="width:'+(b.count/maxChan*100)+'%"></div></div>'+
+            '<span class="w-6 text-right text-[12px] font-semibold tnum">'+b.count+'</span></div>'; }).join('')+
+        '</div></div>'+
+    '</div>'+
+    '<div class="bg-surface-container-lowest rounded-2xl shadow-xs p-5">'+
+      '<h2 class="text-[14px] font-semibold mb-3">Owner performance</h2>'+
+      '<div class="overflow-x-auto"><table class="w-full text-left" style="min-width:480px">'+
+        '<thead><tr class="text-[10.5px] uppercase tracking-wider text-on-surface-variant font-semibold border-b border-outline-variant/40">'+
+          '<th class="py-2 pr-3">Owner</th><th class="py-2 px-3 text-right">Accounts</th><th class="py-2 px-3 text-right">Activities logged</th><th class="py-2 pl-3 text-right">Open follow-ups</th></tr></thead>'+
+        '<tbody>'+ owners.map(function(u){
+          var accts = customers.filter(function(c){return c.ownerId===u.id;});
+          var acts = activities.filter(function(a){return accts.some(function(c){return c.id===a.customerId;});});
+          var open = fuVis.filter(function(f){return f.assignedTo===u.id && f.status!=='done';});
+          return '<tr class="border-b border-outline-variant/20 last:border-0"><td class="py-2.5 pr-3">'+ownerRow(u.id)+'</td>'+
+            '<td class="py-2.5 px-3 text-right tnum">'+accts.length+'</td><td class="py-2.5 px-3 text-right tnum">'+acts.length+'</td><td class="py-2.5 pl-3 text-right tnum">'+open.length+'</td></tr>';
+        }).join('') +'</tbody>'+
+      '</table></div></div>';
+}
+
+/* ============================= COMMON WIRING ============================= */
+function wireCommon(root){
+  root.querySelectorAll('[data-open-cust]').forEach(function(el){ if(!el.__wired){ el.__wired=true; el.addEventListener('click', function(){ openDrawer(el.dataset.openCust); }); } });
+  root.querySelectorAll('[data-log-activity]').forEach(function(el){ if(!el.__wired){ el.__wired=true; el.addEventListener('click', function(e){ e.stopPropagation(); openLogModal(el.dataset.logActivity, {}); }); } });
+  root.querySelectorAll('[data-resolve-alert]').forEach(function(el){ if(!el.__wired){ el.__wired=true; el.addEventListener('click', function(e){ e.stopPropagation(); resolveAlert(el.dataset.resolveAlert); }); } });
+  root.querySelectorAll('[data-mark-fu-done]').forEach(function(el){ if(!el.__wired){ el.__wired=true; el.addEventListener('click', function(e){ e.stopPropagation(); toggleFollowUp(el.dataset.markFuDone); }); } });
+  root.querySelectorAll('[data-goto]').forEach(function(el){ if(!el.__wired){ el.__wired=true; el.addEventListener('click', function(){ setView(el.dataset.goto); }); } });
+  var qlSubmit = root.querySelector('#qlSubmit');
+  if(qlSubmit && !qlSubmit.__wired){
+    qlSubmit.__wired = true;
+    var currentChan = CHANNELS[2] === 'Phone' ? 'LINE' : 'LINE';
+    root.querySelectorAll('.ql-chan-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        root.querySelectorAll('.ql-chan-btn').forEach(function(x){ x.className='ql-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition bg-surface-container-low text-on-surface-variant hover:bg-surface-container'; });
+        b.className='ql-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition bg-tertiary-fixed text-on-tertiary-fixed';
+        b.dataset.selected='1';
+      });
+    });
+    qlSubmit.addEventListener('click', function(){
+      var custId = root.querySelector('#qlCustomer').value;
+      var note = root.querySelector('#qlNote').value.trim();
+      var chanBtn = root.querySelector('.ql-chan-btn[data-selected="1"]');
+      var channel = chanBtn ? chanBtn.dataset.qlChan : 'LINE';
+      if(!note){ showToast('Add a note first'); return; }
+      var c = customers.find(function(x){return x.id===custId;});
+      seq.a++;
+      activities.push({id:'act'+seq.a, customerId:custId, channel:channel, subject:note.length>52?note.slice(0,52)+'...':note, details:note, outcome:'Completed', occurredAt:new Date(), recordedBy:state.currentUserId});
+      c.updatedAt = new Date();
+      root.querySelector('#qlNote').value='';
+      showToast('Touchpoint recorded for '+c.company);
+      renderAll(true);
+    });
+  }
+}
+
+/* ============================= DRAWER ============================= */
+function openDrawer(custId){
+  state.drawerCustId = custId;
+  var c = customers.find(function(x){return x.id===custId;});
+  if(!c) return;
+  var acts = custActivities(custId), fus = custFollowUps(custId);
+  var hist = custStatusHistory(custId);
+  var nextFu = nextFollowUp(custId);
+  var nextFuBadge = nextFu
+    ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[11px] font-semibold">'+ic('event','text-[13px]')+dueLabel(nextFu.dueAt,false)+'</span>'
+    : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-low text-outline text-[11px] font-medium">No follow-up scheduled</span>';
+  var ownerBadge = '<span class="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[11px] font-semibold">'+avatarChip(c.ownerId,16)+esc(userOf(c.ownerId).name)+'</span>';
+  var drawer = document.getElementById('drawer');
+
+  drawer.innerHTML =
+    '<div class="px-5 py-4 border-b border-outline-variant/40 flex items-start gap-3 shrink-0">'+
+      companyAvatar(c.company,42)+
+      '<div class="flex-1 min-w-0"><div class="text-[11px] text-outline">'+c.code+'</div>'+
+      '<h2 class="text-[17px] font-semibold leading-tight truncate">'+esc(c.company)+'</h2>'+
+      '<div class="mt-1.5 flex items-center gap-1.5 flex-wrap">'+statusPill(c.status)+ownerBadge+nextFuBadge+'</div></div>'+
+      '<button id="drawerClose" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center shrink-0">'+ic('close','text-[18px]')+'</button>'+
+    '</div>'+
+    '<div class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-6">'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Overview</h3>'+
+        '<dl class="grid grid-cols-[80px_1fr] gap-y-1.5 gap-x-3 text-[12.5px]">'+
+          kv('Contact', esc(c.contact)) + kv('Email', esc(c.email)) + kv('Phone', esc(c.phone)) +
+          kv('Owner', esc(userOf(c.ownerId).name)) + kv('Team', esc(c.team)) + kv('Updated', relTime(c.updatedAt)) +
+          (c.dealValue? kv('Deal value', money(c.dealValue)) : '') +
+        '</dl></div>'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Status history ('+hist.length+')</h3>'+
+        (hist.length? '<div class="flex flex-col">'+hist.slice(0,5).map(function(h){
+          return '<div class="flex items-start gap-2 py-1.5 border-b border-outline-variant/20 last:border-0">'+
+            '<span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-outline shrink-0"></span>'+
+            '<div class="min-w-0 flex-1"><div class="text-[12px]"><b>'+statusOf(h.fromStatus).name+'</b> &rarr; <b>'+statusOf(h.toStatus).name+'</b></div>'+
+            '<div class="text-[11px] text-on-surface-variant">'+relTime(h.changedAt)+' · by '+esc(userOf(h.changedBy).name)+(h.reason?' · "'+esc(h.reason)+'"':'')+'</div></div></div>';
+        }).join('')+'</div>' : '<div class="text-[12px] text-on-surface-variant">No status changes recorded yet.</div>')+
+      '</div>'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Update status</h3>'+
+        '<div class="flex gap-2">'+
+          '<select id="statusSelect" class="flex-1 h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container">'+
+            STATUSES.map(function(s){return '<option value="'+s.id+'"'+(s.id===c.status?' selected':'')+'>'+s.name+'</option>';}).join('')+
+          '</select>'+
+          '<button id="applyStatus" class="h-9 px-3.5 bg-primary text-on-primary rounded-lg text-[12.5px] font-semibold hover:bg-primary-container transition shrink-0">Apply</button>'+
+        '</div>'+
+        '<input id="statusReason" class="w-full h-9 mt-2 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Reason (optional) — e.g. Budget approved">'+
+      '</div>'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Log new activity</h3>'+
+        '<div class="grid grid-cols-3 gap-1.5 mb-2" id="drawerChannels">'+
+          CHANNELS.map(function(ch,i){ return '<button type="button" data-d-chan="'+ch+'" title="'+ch+'" class="d-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition '+(i===0?'bg-tertiary-fixed text-on-tertiary-fixed':'bg-surface-container-low text-on-surface-variant hover:bg-surface-container')+'">'+ic(CHAN[ch].icon,'text-[14px]')+'<span class="truncate">'+CHAN_SHORT[ch]+'</span></button>'; }).join('')+
+        '</div>'+
+        '<label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">When</label>'+
+        '<input id="actOccurred" type="datetime-local" value="'+toLocalInputValue(new Date())+'" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] mb-2 focus:outline-none focus:ring-2 focus:ring-primary-container">'+
+        '<input id="actSubject" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] mb-2 focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Subject — e.g. Sent revised quotation">'+
+        '<textarea id="actDetails" rows="3" class="w-full p-2.5 rounded-lg bg-surface-container-low text-[12.5px] resize-none mb-2 focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="What happened, what was discussed..."></textarea>'+
+        '<input id="actOutcome" list="outcomeSuggestionsDrawer" value="Completed" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] mb-2 focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Outcome — e.g. Budget pending approval">'+
+        '<datalist id="outcomeSuggestionsDrawer">'+ OUTCOMES.map(function(o){return '<option value="'+o+'">';}).join('') +'</datalist>'+
+        '<label class="flex items-center gap-2 text-[12px] text-on-surface-variant mb-2 cursor-pointer"><input type="checkbox" id="actAlsoFu" class="w-4 h-4 rounded accent-[#2563eb]"><span>Also schedule a follow-up</span></label>'+
+        '<input id="actFuDue" type="date" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] mb-2 focus:outline-none focus:ring-2 focus:ring-primary-container" hidden>'+
+        '<button id="addActivity" class="w-full h-9 bg-primary-container hover:bg-primary text-on-primary-container rounded-lg text-[12.5px] font-semibold flex items-center justify-center gap-1.5 transition">'+ic('send','text-[16px]')+'<span>Add to timeline</span></button>'+
+      '</div>'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Activity timeline ('+acts.length+')</h3>'+
+        '<div class="flex flex-col gap-3">'+ (acts.length? acts.map(function(a,i){return miniAct(a,i===acts.length-1);}).join('') : '<div class="text-[12px] text-on-surface-variant">No activity logged yet.</div>') +'</div>'+
+      '</div>'+
+
+      '<div><h3 class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Follow-ups ('+fus.length+')</h3>'+
+        '<div class="flex flex-col divide-y divide-outline-variant/30 mb-3">'+ (fus.length? fus.map(fuMini).join('') : '<div class="text-[12px] text-on-surface-variant py-1">No follow-ups yet.</div>') +'</div>'+
+        '<div class="flex gap-2">'+
+          '<input id="fuTitle" class="flex-1 h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="New task...">'+
+          '<input id="fuDue" type="date" class="h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container">'+
+        '</div>'+
+        '<button id="addFollowUp" class="w-full h-9 mt-2 bg-surface-container hover:bg-surface-container-high rounded-lg text-[12.5px] font-semibold flex items-center justify-center gap-1.5 transition">'+ic('add','text-[17px]')+'<span>Add follow-up</span></button>'+
+      '</div>'+
+    '</div>';
+
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  drawer.querySelectorAll('.d-chan-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      drawer.querySelectorAll('.d-chan-btn').forEach(function(x){ x.className='d-chan-btn h-9 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition bg-surface-container-low text-on-surface-variant hover:bg-surface-container'; });
+      b.className='d-chan-btn h-9 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition bg-tertiary-fixed text-on-tertiary-fixed';
+      b.dataset.selected='1';
+    });
+  });
+  document.getElementById('applyStatus').addEventListener('click', function(){
+    var val = document.getElementById('statusSelect').value, reason = document.getElementById('statusReason').value.trim();
+    if(val===c.status){ showToast('Status unchanged'); return; }
+    shSeq++;
+    statusHistory.push({id:'sh'+shSeq, customerId:custId, fromStatus:c.status, toStatus:val, changedBy:state.currentUserId, reason:reason, changedAt:new Date()});
+    c.status = val; c.updatedAt = new Date();
+    showToast('Status updated to '+statusOf(val).name+(reason?' - '+reason:''));
+    openDrawer(custId); renderAll(true);
+  });
+  drawer.querySelector('#actAlsoFu').addEventListener('change', function(){ drawer.querySelector('#actFuDue').hidden = !this.checked; });
+  document.getElementById('addActivity').addEventListener('click', function(){
+    var subj = document.getElementById('actSubject').value.trim();
+    if(!subj){ showToast('Add a subject first'); return; }
+    var chanBtn = drawer.querySelector('.d-chan-btn[data-selected="1"]');
+    var occVal = document.getElementById('actOccurred').value;
+    seq.a++;
+    var newActId = 'act'+seq.a;
+    activities.push({id:newActId, customerId:custId, channel: chanBtn? chanBtn.dataset.dChan : 'LINE',
+      subject:subj, details:document.getElementById('actDetails').value.trim(), outcome:document.getElementById('actOutcome').value,
+      occurredAt: occVal? new Date(occVal) : new Date(), recordedBy:state.currentUserId});
+    c.updatedAt = new Date();
+    var alsoFu = document.getElementById('actAlsoFu').checked, fuDueVal = document.getElementById('actFuDue').value;
+    if(alsoFu && fuDueVal){
+      seq.f++;
+      followUps.push({id:'fu'+seq.f, customerId:custId, title:'Follow up: '+subj, description:null, activityId:newActId,
+        dueAt:new Date(fuDueVal+'T09:00:00'), assignedTo:c.ownerId, createdBy:state.currentUserId, priority:'medium', status:'pending', completedAt:null});
+      showToast('Activity logged and follow-up scheduled');
+    } else {
+      showToast('Activity logged');
+    }
+    openDrawer(custId); renderAll(true);
+  });
+  document.getElementById('addFollowUp').addEventListener('click', function(){
+    var title = document.getElementById('fuTitle').value.trim(), due = document.getElementById('fuDue').value;
+    if(!title || !due){ showToast('Add a task and due date'); return; }
+    seq.f++;
+    followUps.push({id:'fu'+seq.f, customerId:custId, title:title, description:null, activityId:null, dueAt:new Date(due+'T09:00:00'),
+      assignedTo:c.ownerId, createdBy:state.currentUserId, priority:'medium', status:'pending', completedAt:null});
+    showToast('Follow-up added');
+    openDrawer(custId); renderAll(true);
+  });
+  drawer.querySelectorAll('[data-toggle-fu]').forEach(function(b){ b.addEventListener('click', function(){ toggleFollowUp(b.dataset.toggleFu); openDrawer(custId); renderAll(true); }); });
+
+  document.getElementById('scrim').classList.add('open');
+  drawer.classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('scrim').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  state.drawerCustId = null;
+}
+function kv(k,v){ return '<dt class="text-on-surface-variant">'+k+'</dt><dd class="font-semibold m-0 truncate">'+v+'</dd>'; }
+function miniAct(a, isLast){
+  var ch = CHAN[a.channel];
+  return '<div class="flex gap-2.5">'+
+    '<div class="flex flex-col items-center pt-0.5"><span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>'+(isLast?'':'<span class="flex-1 w-px bg-outline-variant/50 mt-1"></span>')+'</div>'+
+    '<div class="flex-1 pb-1 min-w-0">'+
+      '<div class="flex items-baseline gap-1.5 flex-wrap">'+ic(ch.icon,'text-[14px] '+ch.color)+'<span class="font-semibold text-[12.5px]">'+esc(a.subject)+'</span>'+
+      '<span class="ml-auto text-[11px] text-outline tnum">'+fmtDateTime(a.occurredAt)+'</span></div>'+
+      '<div class="text-[10.5px] text-outline">by '+esc(userOf(a.recordedBy).name)+'</div>'+
+      (a.details? '<div class="text-[12px] text-on-surface-variant mt-0.5">'+esc(a.details)+'</div>':'')+
+      '<span class="inline-block mt-1 text-[10.5px] px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-medium">'+esc(a.outcome)+'</span>'+
+    '</div></div>';
+}
+function fuMini(f){
+  var overdue = f.status!=='done' && f.dueAt<now;
+  var linkedAct = f.activityId ? activities.find(function(a){return a.id===f.activityId;}) : null;
+  var requestedNote = (f.createdBy && f.createdBy!==f.assignedTo) ? ' · requested by '+esc(userOf(f.createdBy).name) : '';
+  return '<div class="py-2 flex items-start gap-2.5">'+
+    '<input type="checkbox" data-toggle-fu="'+f.id+'" '+(f.status==='done'?'checked':'')+' class="mt-1 w-4 h-4 rounded accent-[#2563eb] cursor-pointer">'+
+    '<div class="min-w-0 flex-1"><div class="text-[12.5px] font-medium '+(f.status==='done'?'line-through text-on-surface-variant':'')+'">'+esc(f.title)+'</div>'+
+    '<div class="text-[11px] '+(overdue?'text-error font-semibold':'text-on-surface-variant')+'">'+dueLabel(f.dueAt,f.status==='done')+' · '+esc(userOf(f.assignedTo).name)+requestedNote+'</div>'+
+    (linkedAct? '<div class="text-[10.5px] text-outline mt-0.5">From: "'+esc(linkedAct.subject)+'"</div>':'')+
+    '</div></div>';
+}
+
+/* ============================= MODALS ============================= */
+function openModalShell(html){
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalScrim').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalScrim').classList.remove('open'); }
+
+function openLogModal(custId, opts){
+  opts = opts || {};
+  var vis = visibleCustomers();
+  var html =
+    '<div class="px-5 py-4 border-b border-outline-variant/40 flex items-center justify-between shrink-0">'+
+      '<h3 class="text-[15px] font-semibold">'+(opts.mode==='task'?'Create follow-up task':'Log activity')+'</h3>'+
+      '<button id="mClose" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center">'+ic('close','text-[18px]')+'</button>'+
+    '</div>'+
+    '<div class="px-5 py-4 flex flex-col gap-3 overflow-y-auto">'+
+      '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Account</label>'+
+        '<select id="mCustomer" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container">'+
+          vis.map(function(c){return '<option value="'+c.id+'"'+(c.id===custId?' selected':'')+'>'+esc(c.company)+' ('+esc(c.contact)+')</option>';}).join('')+
+        '</select></div>'+
+      (opts.mode==='task' ?
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Task</label><input id="mTitle" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="e.g. Call to confirm renewal"></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Notes (optional)</label><textarea id="mTaskDesc" rows="2" class="w-full p-2.5 rounded-lg bg-surface-container-low text-[12.5px] resize-none focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Any context for whoever picks this up..."></textarea></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Assign to</label><select id="mAssignee" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container">'+USERS.filter(function(u){return u.role!=='admin';}).map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')+'</select></div>'+
+        '<div class="grid grid-cols-2 gap-3">'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Due date</label><input id="mDue" type="date" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container"></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Priority</label><select id="mPriority" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container"><option value="medium" selected>Medium</option><option value="normal">Normal</option><option value="high">High</option></select></div>'+
+        '</div>'
+        :
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Channel</label>'+
+          '<div class="grid grid-cols-3 gap-1.5" id="mChannels">'+ CHANNELS.map(function(ch,i){return '<button type="button" data-m-chan="'+ch+'" title="'+ch+'" class="m-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition '+(i===0?'bg-tertiary-fixed text-on-tertiary-fixed':'bg-surface-container-low text-on-surface-variant hover:bg-surface-container')+'">'+ic(CHAN[ch].icon,'text-[14px]')+'<span class="truncate">'+CHAN_SHORT[ch]+'</span></button>';}).join('')+'</div></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">When</label><input id="mOccurred" type="datetime-local" value="'+toLocalInputValue(new Date())+'" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container"></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Subject</label><input id="mSubject" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="e.g. Sent revised quotation"></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Details</label><textarea id="mDetails" rows="3" class="w-full p-2.5 rounded-lg bg-surface-container-low text-[12.5px] resize-none focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="What happened..."></textarea></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Outcome</label><input id="mOutcome" list="outcomeSuggestionsModal" value="Completed" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="e.g. Budget pending approval"><datalist id="outcomeSuggestionsModal">'+OUTCOMES.map(function(o){return '<option value="'+o+'">';}).join('')+'</datalist></div>'+
+        '<label class="flex items-center gap-2 text-[12px] text-on-surface-variant cursor-pointer"><input type="checkbox" id="mAlsoFu" class="w-4 h-4 rounded accent-[#2563eb]"><span>Also schedule a follow-up</span></label>'+
+        '<input id="mFuDue" type="date" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" hidden>'
+      )+
+    '</div>'+
+    '<div class="px-5 py-3.5 border-t border-outline-variant/40 flex justify-end gap-2 shrink-0">'+
+      '<button id="mCancel" class="h-9 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-[12.5px] font-semibold transition">Cancel</button>'+
+      '<button id="mSave" class="h-9 px-3.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container text-[12.5px] font-semibold flex items-center gap-1.5 transition">'+ic(opts.mode==='task'?'add_task':'send','text-[16px]')+'<span>'+(opts.mode==='task'?'Create task':'Save activity')+'</span></button>'+
+    '</div>';
+  openModalShell(html);
+  var box = document.getElementById('modalBox');
+  box.querySelector('#mClose').addEventListener('click', closeModal);
+  box.querySelector('#mCancel').addEventListener('click', closeModal);
+  box.querySelectorAll('.m-chan-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      box.querySelectorAll('.m-chan-btn').forEach(function(x){ x.className='m-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition bg-surface-container-low text-on-surface-variant hover:bg-surface-container'; });
+      b.className='m-chan-btn h-9 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 px-1 transition bg-tertiary-fixed text-on-tertiary-fixed';
+      b.dataset.selected='1';
+    });
+  });
+  var mAlsoFu = box.querySelector('#mAlsoFu');
+  if(mAlsoFu) mAlsoFu.addEventListener('change', function(){ box.querySelector('#mFuDue').hidden = !this.checked; });
+  var mAssignee = box.querySelector('#mAssignee');
+  if(mAssignee){
+    var startCust = customers.find(function(x){return x.id===custId;});
+    if(startCust) mAssignee.value = startCust.ownerId;
+  }
+  box.querySelector('#mSave').addEventListener('click', function(){
+    var cid = box.querySelector('#mCustomer').value;
+    var c = customers.find(function(x){return x.id===cid;});
+    if(opts.mode==='task'){
+      var title = box.querySelector('#mTitle').value.trim(), due = box.querySelector('#mDue').value;
+      if(!title||!due){ showToast('Add a task and due date'); return; }
+      seq.f++;
+      followUps.push({id:'fu'+seq.f, customerId:cid, title:title, description:box.querySelector('#mTaskDesc').value.trim()||null, activityId:null,
+        dueAt:new Date(due+'T09:00:00'), assignedTo:box.querySelector('#mAssignee').value, createdBy:state.currentUserId,
+        priority:box.querySelector('#mPriority').value, status:'pending', completedAt:null});
+      showToast('Task created for '+c.company);
+    } else {
+      var subj = box.querySelector('#mSubject').value.trim();
+      if(!subj){ showToast('Add a subject first'); return; }
+      var chanBtn = box.querySelector('.m-chan-btn[data-selected="1"]');
+      var occVal = box.querySelector('#mOccurred').value;
+      seq.a++;
+      var newActId = 'act'+seq.a;
+      activities.push({id:newActId, customerId:cid, channel: chanBtn? chanBtn.dataset.mChan:'LINE', subject:subj,
+        details:box.querySelector('#mDetails').value.trim(), outcome:box.querySelector('#mOutcome').value, occurredAt: occVal? new Date(occVal): new Date(), recordedBy:state.currentUserId});
+      c.updatedAt = new Date();
+      if(opts.followUpId){ var f=followUps.find(function(x){return x.id===opts.followUpId;}); if(f){ f.status='done'; f.completedAt=new Date(); } }
+      var alsoFu = box.querySelector('#mAlsoFu').checked, fuDueVal = box.querySelector('#mFuDue').value;
+      if(alsoFu && fuDueVal){
+        seq.f++;
+        followUps.push({id:'fu'+seq.f, customerId:cid, title:'Follow up: '+subj, description:null, activityId:newActId,
+          dueAt:new Date(fuDueVal+'T09:00:00'), assignedTo:c.ownerId, createdBy:state.currentUserId, priority:'medium', status:'pending', completedAt:null});
+        showToast('Activity logged and follow-up scheduled for '+c.company);
+      } else {
+        showToast('Activity logged for '+c.company);
+      }
+    }
+    closeModal(); renderAll(true);
+  });
+}
+function openRescheduleModal(fuId){
+  var f = followUps.find(function(x){return x.id===fuId;});
+  if(!f) return;
+  var c = customers.find(function(x){return x.id===f.customerId;});
+  var iso = f.dueAt.toISOString().slice(0,10);
+  var html = '<div class="px-5 py-4 border-b border-outline-variant/40 flex items-center justify-between">'+
+      '<h3 class="text-[15px] font-semibold">Reschedule task</h3><button id="mClose" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center">'+ic('close','text-[18px]')+'</button></div>'+
+    '<div class="px-5 py-4 flex flex-col gap-3">'+
+      '<div class="text-[12.5px] text-on-surface-variant"><b class="text-on-surface">'+esc(c.company)+'</b> — '+esc(f.title)+'</div>'+
+      '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">New due date</label>'+
+      '<input id="rDue" type="date" value="'+iso+'" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container"></div>'+
+    '</div>'+
+    '<div class="px-5 py-3.5 border-t border-outline-variant/40 flex justify-end gap-2">'+
+      '<button id="mCancel" class="h-9 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-[12.5px] font-semibold">Cancel</button>'+
+      '<button id="mSave" class="h-9 px-3.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container text-[12.5px] font-semibold">Save date</button>'+
+    '</div>';
+  openModalShell(html);
+  var box = document.getElementById('modalBox');
+  box.querySelector('#mClose').addEventListener('click', closeModal);
+  box.querySelector('#mCancel').addEventListener('click', closeModal);
+  box.querySelector('#mSave').addEventListener('click', function(){
+    var v = box.querySelector('#rDue').value;
+    if(!v){ showToast('Pick a date'); return; }
+    f.dueAt = new Date(v+'T09:00:00');
+    showToast('Rescheduled to '+fmtDate(f.dueAt));
+    closeModal(); renderAll(true);
+  });
+}
+function openNewCustomerModal(){
+  var html = '<div class="px-5 py-4 border-b border-outline-variant/40 flex items-center justify-between">'+
+      '<h3 class="text-[15px] font-semibold">New customer</h3><button id="mClose" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center">'+ic('close','text-[18px]')+'</button></div>'+
+    '<div class="px-5 py-4 flex flex-col gap-3 overflow-y-auto">'+
+      field('ncCompany','Company name','e.g. Harbor & Lane Co.') +
+      field('ncContact','Contact name','e.g. Alex Rivera') +
+      '<div class="grid grid-cols-2 gap-3">'+ field('ncEmail','Email','name@company.com') + field('ncPhone','Phone','+66 8x xxx xxxx') +'</div>'+
+      '<div class="grid grid-cols-2 gap-3">'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Status</label><select id="ncStatus" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px]">'+STATUSES.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>';}).join('')+'</select></div>'+
+        '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">Owner</label><select id="ncOwner" class="w-full h-9 px-2 rounded-lg bg-surface-container-low text-[12.5px]">'+USERS.filter(function(u){return u.role!=='admin';}).map(function(u){return '<option value="'+u.id+'">'+u.name+'</option>';}).join('')+'</select></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="px-5 py-3.5 border-t border-outline-variant/40 flex justify-end gap-2">'+
+      '<button id="mCancel" class="h-9 px-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-[12.5px] font-semibold">Cancel</button>'+
+      '<button id="mSave" class="h-9 px-3.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container text-[12.5px] font-semibold flex items-center gap-1.5">'+ic('add','text-[17px]')+'<span>Add customer</span></button>'+
+    '</div>';
+  openModalShell(html);
+  var box = document.getElementById('modalBox');
+  box.querySelector('#mClose').addEventListener('click', closeModal);
+  box.querySelector('#mCancel').addEventListener('click', closeModal);
+  box.querySelector('#mSave').addEventListener('click', function(){
+    var company = box.querySelector('#ncCompany').value.trim(), contact = box.querySelector('#ncContact').value.trim();
+    if(!company || !contact){ showToast('Company and contact are required'); return; }
+    var c = mkCustomer(company, contact, box.querySelector('#ncEmail').value.trim(), box.querySelector('#ncPhone').value.trim(),
+      box.querySelector('#ncStatus').value, box.querySelector('#ncOwner').value, 0);
+    customers.unshift(c);
+    closeModal(); showToast('Customer added'); renderAll();
+  });
+}
+function field(id,label,ph){
+  return '<div class="flex flex-col gap-1"><label class="text-[10.5px] font-semibold text-on-surface-variant uppercase tracking-wider">'+label+'</label>'+
+    '<input id="'+id+'" class="w-full h-9 px-2.5 rounded-lg bg-surface-container-low text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="'+ph+'"></div>';
+}
+
+/* ============================= BELL ============================= */
+function renderBell(){
+  var alertsNow = computeAlerts();
+  document.getElementById('bellDot').hidden = alertsNow.length===0;
+  document.getElementById('bellCount').textContent = alertsNow.length;
+  var list = document.getElementById('bellList');
+  if(!alertsNow.length){ list.innerHTML = '<div class="px-4 py-6 text-center text-[12px] text-on-surface-variant">You\'re all caught up.</div>'; return; }
+  list.innerHTML = alertsNow.slice(0,8).map(function(a){
+    var c = customers.find(function(x){return x.id===a.customerId;});
+    var tone = a.kind==='overdue' ? 'text-error bg-error-container' : 'text-amber bg-amber-container';
+    return '<div class="px-4 py-3 flex items-start gap-2.5 hover:bg-surface-container-low">'+
+      '<div class="w-7 h-7 rounded-lg '+tone+' flex items-center justify-center shrink-0">'+ic(a.kind==='overdue'?'schedule':'notifications_active','text-[15px]')+'</div>'+
+      '<div class="min-w-0 flex-1 cursor-pointer" data-bell-open="'+c.id+'"><div class="text-[12px] font-semibold truncate">'+esc(c.company)+'</div>'+
+      '<div class="text-[11.5px] text-on-surface-variant leading-snug">'+esc(a.message)+'</div></div>'+
+      '<button class="text-outline hover:text-on-surface shrink-0" data-bell-resolve="'+a.id+'">'+ic('close','text-[16px]')+'</button>'+
+    '</div>';
+  }).join('');
+  list.querySelectorAll('[data-bell-open]').forEach(function(el){ el.addEventListener('click', function(){ closeAllPops(); openDrawer(el.dataset.bellOpen); }); });
+  list.querySelectorAll('[data-bell-resolve]').forEach(function(el){ el.addEventListener('click', function(e){ e.stopPropagation(); resolveAlert(el.dataset.bellResolve); }); });
+}
+
+/* ============================= GLOBAL RENDER ============================= */
+function renderAll(keepDrawer){
+  var fns = { dashboard:renderDashboard, customers:renderCustomers, followups:renderFollowUps, activity:renderActivityLog, reports:renderReports };
+  fns[state.view]();
+  renderBell();
+  if(!keepDrawer && state.drawerCustId && !visibleCustomers().some(function(c){return c.id===state.drawerCustId;})) closeDrawer();
+}
+
+/* ============================= INIT / EVENTS ============================= */
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.getElementById('modalScrim').addEventListener('click', function(e){ if(e.target.id==='modalScrim') closeModal(); });
+document.getElementById('btnNewActivity').addEventListener('click', function(){ var v=visibleCustomers(); openLogModal(v.length?v[0].id:null, {}); });
+document.getElementById('btnBell').addEventListener('click', function(e){ e.stopPropagation(); document.getElementById('avatarPop').classList.remove('open'); document.getElementById('bellPop').classList.toggle('open'); });
+document.getElementById('btnAvatar').addEventListener('click', function(e){ e.stopPropagation(); document.getElementById('bellPop').classList.remove('open'); renderAvatarPop(); document.getElementById('avatarPop').classList.toggle('open'); });
+document.addEventListener('click', function(e){ if(!e.target.closest('#btnBell') && !e.target.closest('#bellPop')) document.getElementById('bellPop').classList.remove('open'); if(!e.target.closest('#btnAvatar') && !e.target.closest('#avatarPop')) document.getElementById('avatarPop').classList.remove('open'); });
+document.getElementById('mobileNavBtn') && document.getElementById('mobileNavBtn').addEventListener('click', function(){ document.querySelector('.app-sidebar').classList.toggle('open'); });
+document.getElementById('searchInput').addEventListener('input', function(e){
+  state.search = e.target.value;
+  if(e.target.value.trim()){ if(state.view!=='customers') setView('customers'); else renderCustomerRows(); }
+});
+document.getElementById('roleSelect').addEventListener('change', function(e){
+  state.currentUserId = e.target.value;
+  renderRoleSelect(); closeDrawer(); renderAll();
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeDrawer(); closeModal(); closeAllPops(); } });
+
+renderNav();
+renderRoleSelect();
+setView('dashboard');
+})();
+</script>

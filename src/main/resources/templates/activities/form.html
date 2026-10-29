@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${activity == null} ? 'Log activity' : 'Edit activity')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <a class="small fw-semibold text-decoration-none"
+                       th:href="${serviceCase != null} ? @{/cases/{id}(id=${serviceCase.id})} : (${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : (${me.manager} ? @{/activities} : @{/dashboard}))">
+                        <span class="ms ms-sm">arrow_back</span> Back
+                    </a>
+                    <h1 class="mt-1" th:text="${activity == null} ? 'Log activity' : 'Edit activity'">Log activity</h1>
+                    <p th:if="${serviceCase == null}">Record a call, meeting, message or quotation so the whole team can see it.</p>
+                    <p th:if="${serviceCase != null}">
+                        For case <strong th:text="${serviceCase.code} + ': ' + ${serviceCase.title}"></strong>
+                        · <span th:text="${serviceCase.customer.companyName}"></span>
+                    </p>
+                </div>
+            </div>
+
+            <form class="cp-card form-card" th:object="${form}" method="post" novalidate
+                  th:action="${activity == null} ? @{/activities} : @{/activities/{id}(id=${activity.id})}">
+                <div class="cp-card-body d-grid gap-4">
+                    <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger flash mb-0" role="alert">
+                        <span class="ms">error</span> Please fix the highlighted fields.
+                    </div>
+
+                    <th:block th:if="${serviceCase != null}">
+                        <input type="hidden" th:field="*{caseId}">
+                        <input type="hidden" th:field="*{customerId}">
+                    </th:block>
+                    <div th:if="${serviceCase == null}">
+                        <label class="form-label" for="customerId">Customer <span class="text-danger">*</span></label>
+                        <select class="form-select" th:field="*{customerId}" th:errorclass="is-invalid" th:disabled="${activity != null}">
+                            <option value="">Choose a customer…</option>
+                            <option th:each="c : ${customerOptions}" th:value="${c.id}" th:text="${c.companyName}"></option>
+                        </select>
+                        <input th:if="${activity != null}" type="hidden" th:field="*{customerId}">
+                        <div class="invalid-feedback" th:errors="*{customerId}"></div>
+                    </div>
+
+                    <div>
+                        <span class="form-label d-block">Activity type <span class="text-danger">*</span></span>
+                        <div class="choice-grid" th:classappend="${#fields.hasErrors('activityType')} ? 'is-invalid-group'">
+                            <th:block th:each="t : ${activityTypes}">
+                                <input type="radio" th:field="*{activityType}" th:value="${t}">
+                                <label th:for="${#ids.prev('activityType')}">
+                                    <span class="ms" th:text="${t.icon}">call</span><span th:text="${t.label}">Call</span>
+                                </label>
+                            </th:block>
+                        </div>
+                        <div class="text-danger small mt-1" th:errors="*{activityType}"></div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="channel">Channel <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{channel}" th:errorclass="is-invalid">
+                                <option value="">Choose a channel…</option>
+                                <option th:each="ch : ${channels}" th:value="${ch}" th:text="${ch.label}"></option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{channel}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="activityDate">Date and time <span class="text-danger">*</span></label>
+                            <input class="form-control" type="datetime-local" th:field="*{activityDate}" th:errorclass="is-invalid">
+                            <div class="invalid-feedback" th:errors="*{activityDate}"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" for="outcome">Outcome <span class="text-danger">*</span></label>
+                        <textarea class="form-control" th:field="*{outcome}" th:errorclass="is-invalid" rows="4" maxlength="2000"
+                                  placeholder="What happened, and what was agreed?"></textarea>
+                        <div class="invalid-feedback" th:errors="*{outcome}"></div>
+                    </div>
+                </div>
+                <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
+                    <a class="btn btn-light" th:href="${serviceCase != null} ? @{/cases/{id}(id=${serviceCase.id})} : (${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : (${me.manager} ? @{/activities} : @{/dashboard}))">Cancel</a>
+                    <button class="btn btn-primary" type="submit"><span class="ms">save</span> Save</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <h1 th:text="'Welcome back, ' + ${me.firstName}">Welcome back</h1>
+                    <p th:text="${me.manager} ? 'Here is what needs attention across ' + ${me.team.name} + ' today.' : 'Here is what needs attention on your accounts today.'"></p>
+                </div>
+                <a class="btn btn-light" th:href="@{/customers/new}"><span class="ms">add_business</span> New customer</a>
+            </div>
+
+            <!-- KPIs -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <a class="cp-card kpi text-decoration-none text-reset" th:href="@{/customers}">
+                        <span class="kpi-icon tone-blue"><span class="ms">corporate_fare</span></span>
+                        <span class="kpi-value tnum" th:text="${customerTotal}">0</span>
+                        <span class="kpi-label" th:text="${me.manager} ? 'Team customers' : 'My customers'">Customers</span>
+                    </a>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <a class="cp-card kpi text-decoration-none text-reset" th:href="@{/followups(tab='overdue')}">
+                        <span class="kpi-icon tone-red"><span class="ms">alarm</span></span>
+                        <span class="kpi-value tnum" th:text="${alerts.overdue.size()}">0</span>
+                        <span class="kpi-label">Overdue follow-ups</span>
+                    </a>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="cp-card kpi">
+                        <span class="kpi-icon tone-amber"><span class="ms">hourglass_empty</span></span>
+                        <span class="kpi-value tnum" th:text="${alerts.stagnant.size()}">0</span>
+                        <span class="kpi-label" th:text="'Quiet for ' + ${stagnantDays} + '+ days'">Stagnant</span>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <a class="cp-card kpi text-decoration-none text-reset" th:href="${me.manager} ? @{/activities} : @{/customers}">
+                        <span class="kpi-icon tone-green"><span class="ms">bolt</span></span>
+                        <span class="kpi-value tnum" th:text="${weekActivities}">0</span>
+                        <span class="kpi-label">Activities in last 7 days</span>
+                    </a>
+                </div>
+            </div>
+
+            <div th:if="${alerts.total() == 0}" class="alert alert-success flash mb-4" role="status">
+                <span class="ms">task_alt</span> No alerts. No overdue follow-ups and no quiet customers.
+            </div>
+
+            <div class="row g-4">
+                <!-- Alerts (FR-07) -->
+                <div class="col-xl-8 d-flex flex-column gap-4">
+                    <section class="cp-card">
+                        <div class="cp-card-head">
+                            <h2><span class="ms" style="color:var(--cp-red)">alarm</span> Overdue follow-ups</h2>
+                            <a class="small fw-semibold" th:href="@{/followups(tab='overdue')}">View all</a>
+                        </div>
+                        <div th:if="${alerts.overdue.isEmpty()}" class="empty"><span class="ms">task_alt</span>No alerts. Every follow-up is on time.</div>
+                        <a th:each="f : ${alerts.overdue}" class="alert-item" th:href="@{/customers/{id}(id=${f.customer.id})}">
+                            <span class="alert-icon tone-red"><span class="ms">event_busy</span></span>
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="alert-title text-truncate" th:text="${f.notes != null ? f.notes : 'Follow-up'}">Call client</div>
+                                <div class="alert-meta">
+                                    <span th:text="${f.customer.companyName}">ABC</span> ·
+                                    <span th:text="${f.assignedUser.fullName}">Nadia</span> ·
+                                    <span th:replace="~{fragments/layout :: status(${f.customer.currentStatus})}"></span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-semibold" style="color:var(--cp-red)" th:text="${@fmt.due(f.dueDate)}">2 days overdue</div>
+                                <div class="alert-meta" th:text="${@fmt.date(f.dueDate)}">1 Oct</div>
+                            </div>
+                        </a>
+                    </section>
+
+                    <section class="cp-card">
+                        <div class="cp-card-head">
+                            <h2><span class="ms" style="color:var(--cp-amber)">hourglass_empty</span> Stagnant customers</h2>
+                            <span class="text-muted small" th:text="'No activity for more than ' + ${stagnantDays} + ' days'"></span>
+                        </div>
+                        <div th:if="${alerts.stagnant.isEmpty()}" class="empty"><span class="ms">task_alt</span>No alerts. Every customer was contacted recently.</div>
+                        <a th:each="s : ${alerts.stagnant}" class="alert-item" th:href="@{/customers/{id}(id=${s.customer.id})}">
+                            <span class="alert-icon tone-amber"><span class="ms">person_alert</span></span>
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="alert-title text-truncate" th:text="${s.customer.companyName}">Northgate</div>
+                                <div class="alert-meta">
+                                    <span th:text="${s.customer.owner.fullName}">Marcus</span> ·
+                                    <span th:replace="~{fragments/layout :: status(${s.customer.currentStatus})}"></span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-semibold" style="color:var(--cp-amber)"
+                                     th:text="${s.neverContacted} ? 'Never contacted' : ${s.daysInactive} + ' days inactive'">41 days</div>
+                                <div class="alert-meta" th:text="${s.neverContacted} ? 'No activity recorded' : 'Last: ' + ${@fmt.date(s.lastActivity)}">Last</div>
+                            </div>
+                        </a>
+                    </section>
+                </div>
+
+                <div class="col-xl-4 d-flex flex-column gap-4">
+                    <section class="cp-card">
+                        <div class="cp-card-head">
+                            <h2><span class="ms">work</span> My cases</h2>
+                            <a class="small fw-semibold" th:href="@{/cases}">All cases</a>
+                        </div>
+                        <div th:if="${myCases.isEmpty()}" class="empty">No cases waiting for your part.</div>
+                        <a th:each="a : ${myCases}" class="alert-item" th:href="@{/cases/{id}(id=${a.serviceCase.id})}">
+                            <span class="alert-icon tone-blue"><span class="ms ms-sm">assignment_ind</span></span>
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="alert-title text-truncate" th:text="${a.serviceCase.title}">Case</div>
+                                <div class="alert-meta text-truncate" th:text="${a.serviceCase.code} + ' · ' + ${a.serviceCase.customer.companyName}"></div>
+                            </div>
+                            <span class="pill no-dot" th:classappend="${a.serviceCase.priority.css}" th:text="${a.serviceCase.priority.label}"></span>
+                        </a>
+                    </section>
+
+                    <section class="cp-card">
+                        <div class="cp-card-head"><h2><span class="ms">donut_large</span> Status mix</h2></div>
+                        <div class="cp-card-body">
+                            <div class="status-bar mb-3" th:if="${customerTotal > 0}">
+                                <span th:each="e : ${statusCounts}" th:if="${e.value > 0}"
+                                      th:class="'bar-' + ${#strings.toLowerCase(e.key.name())}"
+                                      th:style="'width:' + ${e.value * 100.0 / customerTotal} + '%'"
+                                      th:title="${e.key.label} + ': ' + ${e.value}"></span>
+                            </div>
+                            <div class="d-flex flex-column gap-2">
+                                <a th:each="e : ${statusCounts}" class="d-flex align-items-center justify-content-between text-reset text-decoration-none"
+                                   th:href="@{/customers(status=${e.key})}">
+                                    <span th:replace="~{fragments/layout :: status(${e.key})}"></span>
+                                    <span class="fw-semibold tnum" th:text="${e.value}">0</span>
+                                </a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="cp-card">
+                        <div class="cp-card-head">
+                            <h2><span class="ms">event_upcoming</span> Due this week</h2>
+                            <a class="small fw-semibold" th:href="@{/followups}">All</a>
+                        </div>
+                        <div th:if="${upcoming.isEmpty()}" class="empty">Nothing due in the next 7 days.</div>
+                        <a th:each="f : ${upcoming}" class="alert-item" th:href="@{/customers/{id}(id=${f.customer.id})}">
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="alert-title text-truncate" th:text="${f.notes != null ? f.notes : 'Follow-up'}">Task</div>
+                                <div class="alert-meta text-truncate" th:text="${f.customer.companyName} + ' · ' + ${f.assignedUser.fullName}">Customer</div>
+                            </div>
+                            <span class="pill no-dot fu-pending" th:text="${@fmt.due(f.dueDate)}">Due in 3 days</span>
+                        </a>
+                    </section>
+
+                    <section class="cp-card">
+                        <div class="cp-card-head">
+                            <h2><span class="ms">history</span> Recent activity</h2>
+                            <a th:if="${me.manager}" class="small fw-semibold" th:href="@{/activities}">Activity log</a>
+                        </div>
+                        <div th:if="${recent.isEmpty()}" class="empty">No activity recorded.</div>
+                        <a th:each="a : ${recent}" class="alert-item" th:href="@{/customers/{id}(id=${a.customer.id})}">
+                            <span class="alert-icon tone-blue"><span class="ms ms-sm" th:text="${a.activityType.icon}">call</span></span>
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="alert-title text-truncate" th:text="${a.customer.companyName}">Customer</div>
+                                <div class="alert-meta text-truncate" th:text="${a.outcome}">Outcome</div>
+                            </div>
+                            <span class="alert-meta text-nowrap" th:text="${@fmt.ago(a.activityDate)}">today</span>
+                        </a>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${editUser == null} ? 'Add user' : 'Edit user')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+    <div class="app-main">
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+        <main class="app-content">
+            <div th:replace="~{fragments/layout :: flash}"></div>
+
+            <div class="page-head">
+                <div>
+                    <a class="small fw-semibold text-decoration-none" th:href="@{/users}"><span class="ms ms-sm">arrow_back</span> Users</a>
+                    <h1 class="mt-1" th:text="${editUser == null} ? 'Add user' : 'Edit ' + ${editUser.fullName}">Add user</h1>
+                </div>
+            </div>
+
+            <form class="cp-card form-card" th:object="${form}" method="post" novalidate
+                  th:action="${editUser == null} ? @{/users} : @{/users/{id}(id=${editUser.id})}">
+                <div class="cp-card-body d-grid gap-3">
+                    <div>
+                        <label class="form-label" for="fullName">Full name <span class="text-danger">*</span></label>
+                        <input class="form-control" th:field="*{fullName}" th:errorclass="is-invalid" maxlength="100">
+                        <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="email">Work email <span class="text-danger">*</span></label>
+                        <input class="form-control" type="email" th:field="*{email}" th:errorclass="is-invalid" maxlength="100" autocomplete="off">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="password">
+                            <span th:text="${editUser == null} ? 'Initial password' : 'New password'">Password</span>
+                            <span th:if="${editUser == null}" class="text-danger">*</span>
+                        </label>
+                        <input class="form-control" type="password" th:field="*{password}" th:errorclass="is-invalid" autocomplete="new-password">
+                        <div class="invalid-feedback" th:errors="*{password}"></div>
+                        <div class="form-text" th:text="${editUser == null} ? 'At least 8 characters. Stored as a bcrypt hash.' : 'Leave blank to keep the current password.'"></div>
+                    </div>
+                    <div>
+                        <span class="form-label d-block">Role <span class="text-danger">*</span></span>
+                        <div class="choice-grid" style="grid-template-columns:repeat(2,1fr)">
+                            <th:block th:each="r : ${roles}">
+                                <input type="radio" th:field="*{role}" th:value="${r}"
+                                       th:disabled="${editUser != null and editUser.id == me.id}">
+                                <label th:for="${#ids.prev('role')}">
+                                    <span class="ms" th:text="${r.name() == 'MANAGER'} ? 'shield_person' : 'person'"></span>
+                                    <span th:text="${r.label}"></span>
+                                </label>
+                            </th:block>
+                        </div>
+                        <input th:if="${editUser != null and editUser.id == me.id}" type="hidden" th:field="*{role}">
+                        <div class="form-text">Managers can see every customer, reassign owners and manage users.</div>
+                    </div>
+                </div>
+                <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
+                    <a class="btn btn-light" th:href="@{/users}">Cancel</a>
+                    <button class="btn btn-primary" type="submit"><span class="ms">save</span> Save user</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
