@@ -33,7 +33,8 @@ public class StatusHistory {
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
-    @Column(length = 255)
+    /** Required (FR-06); the first entry of a new customer uses "New customer created". */
+    @Column(nullable = false, length = 255)
     private String reason;
 
     @PrePersist

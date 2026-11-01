@@ -2,6 +2,7 @@ package com.customerpulse.config;
 
 import com.customerpulse.domain.*;
 import com.customerpulse.repository.*;
+import com.customerpulse.service.CustomerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -17,8 +18,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Optional sample data for Team A (2 staff, customers, activities, follow-ups, cases).
- * Off by default; turn on with app.seed-demo-data=true. The automated tests use it.
+ * Optional sample data (2 staff, customers, activities, follow-ups) for demos.
+ * Off by default; turn on with app.seed-demo-data=true. Sample rows are loaded directly,
+ * so they have no audit entries; everything done in the app afterwards is audited.
  */
 @Component
 @Order(2)
@@ -33,18 +35,13 @@ public class DataSeeder implements CommandLineRunner {
     private final ActivityRepository activities;
     private final FollowUpRepository followUps;
     private final StatusHistoryRepository history;
-    private final CaseRepository cases;
-    private final CaseAssignmentRepository caseAssignments;
     private final PasswordEncoder encoder;
 
     private final Map<String, Customer> byName = new HashMap<>();
     private final LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 
     public DataSeeder(UserRepository users, CustomerRepository customers, ActivityRepository activities,
-                      FollowUpRepository followUps, StatusHistoryRepository history, CaseRepository cases,
-                      CaseAssignmentRepository caseAssignments, PasswordEncoder encoder) {
-        this.cases = cases;
-        this.caseAssignments = caseAssignments;
+                      FollowUpRepository followUps, StatusHistoryRepository history, PasswordEncoder encoder) {
         this.users = users;
         this.customers = customers;
         this.activities = activities;
@@ -57,29 +54,28 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         if (customers.count() == 0 && users.findByEmailIgnoreCase("priya@example.com").isPresent()) seedBase();
-        if (cases.count() == 0) seedCases();
     }
 
     private void seedBase() {
         AppUser priya = users.findByEmailIgnoreCase("priya@example.com").orElseThrow();
-        AppUser nadia = user("Nadia Osei", "nadia@example.com", Role.STAFF, priya.getTeam());
-        AppUser marcus = user("Marcus Lindqvist", "marcus@example.com", Role.STAFF, priya.getTeam());
+        AppUser nadia = user("Nadia Osei", "nadia@example.com", Role.STAFF);
+        AppUser marcus = user("Marcus Lindqvist", "marcus@example.com", Role.STAFF);
 
-        customer("ABC Company Ltd.", "Suchada Boon", "suchada@abc-th.com", "+66 89 123 4501", CustomerStatus.HOLD, nadia, 41, priya, "Budget under approval until next month");
-        customer("Orion Freight Co.", "Wichai Meesuk", "wichai@orionfr.co", "+66 81 553 2290", CustomerStatus.ACTIVE, nadia, 43, nadia, "Contract signed");
-        customer("Blue Harbor Logistics", "Kanya Srisuk", "kanya@bluehbr.com", "+66 92 771 0034", CustomerStatus.NEGOTIATING, nadia, 49, null, null);
-        customer("Maple & Finch Retail", "David Okoye", "david@maplefinch.com", "+66 63 220 9981", CustomerStatus.ACTIVE, marcus, 42, marcus, "First order delivered");
-        customer("Siam Textile Group", "Ploy Anantasin", "ploy@siamtextile.co", "+66 85 040 7712", CustomerStatus.NEGOTIATING, marcus, 54, null, null);
-        customer("Northgate Realty", "Tom Vasquez", "tom@northgate.com", "+66 87 662 1150", CustomerStatus.INACTIVE, marcus, 81, priya, "No reply for 5 weeks");
-        customer("Lotus Fresh Foods", "Arisa Chan", "arisa@lotusfresh.co", "+66 90 331 8807", CustomerStatus.ACTIVE, nadia, 46, nadia, "Standing weekly order agreed");
-        customer("Riverside Print Co.", "Somchai Petch", "somchai@riverprint.com", "+66 84 118 2266", CustomerStatus.LOST, marcus, 90, priya, "Did not renew the contract");
-        customer("Nimbus Cloud Systems", "Grace Lin", "grace@nimbuscloud.io", "+66 61 900 4432", CustomerStatus.NEGOTIATING, nadia, 40, null, null);
-        customer("Golden Teak Furniture", "Anurak Sae", "anurak@goldenteak.co", "+66 88 245 6690", CustomerStatus.HOLD, marcus, 60, marcus, "Waiting on payment terms");
-        customer("Everline Insurance", "Natcha Ruang", "natcha@everline.co", "+66 62 774 3321", CustomerStatus.ACTIVE, nadia, 52, nadia, "Policy bought");
-        customer("Coral Bay Hotels", "James Whitfield", "james@coralbay.com", "+66 89 556 0021", CustomerStatus.NEGOTIATING, marcus, 45, null, null);
-        customer("Pinnacle Steelworks", "Ravi Kumar", "ravi@pinnaclesteel.co", "+66 91 480 2287", CustomerStatus.INACTIVE, nadia, 78, priya, "Invoice unpaid, contact stopped");
-        customer("Sunview Solar Co.", "Malee Thongdee", "malee@sunviewsolar.co", "+66 80 112 9945", CustomerStatus.ACTIVE, marcus, 48, marcus, "Installation approved");
-        customer("Kinnaree Spa & Wellness", "Pim Jaidee", "pim@kinnareespa.co", "+66 82 300 4411", CustomerStatus.NEGOTIATING, nadia, 3, null, null);
+        customer("ABC Company Ltd.", "Suchada Boon", "suchada@abc-th.com", "0891234501", CustomerStatus.HOLD, nadia, 41, priya, "Budget under approval until next month");
+        customer("Orion Freight Co.", "Wichai Meesuk", "wichai@orionfr.co", "0815532290", CustomerStatus.ACTIVE, nadia, 43, nadia, "Contract signed");
+        customer("Blue Harbor Logistics", "Kanya Srisuk", "kanya@bluehbr.com", "0927710034", CustomerStatus.NEGOTIATING, nadia, 49, null, null);
+        customer("Maple & Finch Retail", "David Okoye", "david@maplefinch.com", "0632209981", CustomerStatus.ACTIVE, marcus, 42, marcus, "First order delivered");
+        customer("Siam Textile Group", "Ploy Anantasin", "ploy@siamtextile.co", "0850407712", CustomerStatus.NEGOTIATING, marcus, 54, null, null);
+        customer("Northgate Realty", "Tom Vasquez", "tom@northgate.com", "0876621150", CustomerStatus.INACTIVE, marcus, 81, priya, "No reply for 5 weeks");
+        customer("Lotus Fresh Foods", "Arisa Chan", "arisa@lotusfresh.co", "0903318807", CustomerStatus.ACTIVE, nadia, 46, nadia, "Standing weekly order agreed");
+        customer("Riverside Print Co.", "Somchai Petch", "somchai@riverprint.com", "0841182266", CustomerStatus.LOST, marcus, 90, priya, "Did not renew the contract");
+        customer("Nimbus Cloud Systems", "Grace Lin", "grace@nimbuscloud.io", "0619004432", CustomerStatus.NEGOTIATING, nadia, 40, null, null);
+        customer("Golden Teak Furniture", "Anurak Sae", "anurak@goldenteak.co", "0882456690", CustomerStatus.HOLD, marcus, 60, marcus, "Waiting on payment terms");
+        customer("Everline Insurance", "Natcha Ruang", "natcha@everline.co", "0627743321", CustomerStatus.ACTIVE, nadia, 52, nadia, "Policy bought");
+        customer("Coral Bay Hotels", "James Whitfield", "james@coralbay.com", "0895560021", CustomerStatus.NEGOTIATING, marcus, 45, null, null);
+        customer("Pinnacle Steelworks", "Ravi Kumar", "ravi@pinnaclesteel.co", "0914802287", CustomerStatus.INACTIVE, nadia, 78, priya, "Invoice unpaid, contact stopped");
+        customer("Sunview Solar Co.", "Malee Thongdee", "malee@sunviewsolar.co", "0801129945", CustomerStatus.ACTIVE, marcus, 48, marcus, "Installation approved");
+        customer("Kinnaree Spa & Wellness", "Pim Jaidee", "pim@kinnareespa.co", "0823004411", CustomerStatus.NEGOTIATING, nadia, 3, null, null);
 
         Activity abcProposal = act("ABC Company Ltd.", ActivityType.EMAIL, Channel.EMAIL, "Sent revised proposal v3 with updated pricing tiers for the annual logistics contract.", 6, nadia);
         act("ABC Company Ltd.", ActivityType.CHAT, Channel.LINE, "Client replied: \"Budget is under approval. Please contact me next month.\"", 1, nadia);
@@ -115,88 +111,20 @@ public class DataSeeder implements CommandLineRunner {
         followUp("Maple & Finch Retail", null, marcus, -2, "Confirm delivery credit was applied", true);
         followUp("Sunview Solar Co.", null, marcus, 5, "Share final inspection report", false);
 
-        log.info("Demo data loaded into {}: staff nadia@example.com and marcus@example.com, password: {}", priya.getTeam().getName(), DEMO_PASSWORD);
+        log.info("Demo data loaded: staff nadia@example.com and marcus@example.com, password: {}", DEMO_PASSWORD);
     }
 
-    /** Three example cases: one open, one in progress, one closed. */
-    private void seedCases() {
-        AppUser priya = users.findByEmailIgnoreCase("priya@example.com").orElse(null);
-        AppUser nadia = users.findByEmailIgnoreCase("nadia@example.com").orElse(null);
-        AppUser marcus = users.findByEmailIgnoreCase("marcus@example.com").orElse(null);
-        if (priya == null || nadia == null || marcus == null) return;
-        for (Customer c : customers.findAll()) byName.putIfAbsent(c.getCompanyName(), c);
-        if (!byName.containsKey("Siam Textile Group") || !byName.containsKey("Pinnacle Steelworks")
-                || !byName.containsKey("Sunview Solar Co.")) return;
-
-        // In progress: Marcus is done, Nadia still working
-        ServiceCase renewal = serviceCase("Win the Siam Textile renewal", "Siam Textile Group", CasePriority.HIGH, 7, priya,
-                CaseStatus.IN_PROGRESS, 4,
-                "They are comparing us with two other vendors.\nMarcus: prepare the price comparison sheet.\nNadia: set up a call with their logistics lead about delivery times.");
-        assign(renewal, marcus, true, 1, "Comparison sheet sent to Ploy");
-        assign(renewal, nadia, false, 0, null);
-        caseAct(renewal, marcus, ActivityType.EMAIL, Channel.EMAIL, "Sent price comparison sheet against both competing vendors.", 1);
-        caseAct(renewal, nadia, ActivityType.CALL, Channel.PHONE, "Called their logistics lead; meeting booked for Friday to walk through delivery times.", 0);
-
-        // Open: nobody has started yet
-        ServiceCase invoice = serviceCase("Recover the overdue Pinnacle invoice", "Pinnacle Steelworks", CasePriority.MEDIUM, 10, priya,
-                CaseStatus.OPEN, 1, "Invoice INV-2207 is 45 days late. Find out why and agree a payment date.");
-        assign(invoice, nadia, false, 0, null);
-
-        // Closed: everyone finished
-        ServiceCase install = serviceCase("Hand over the Sunview solar install", "Sunview Solar Co.", CasePriority.LOW, -3, priya,
-                CaseStatus.CLOSED, 12, "Make sure the customer has the inspection report and maintenance plan.");
-        assign(install, marcus, true, 4, "Inspection report delivered");
-        assign(install, nadia, true, 3, "Maintenance plan signed");
-        install.setClosedAt(now.minusDays(3));
-        install.setClosedBy(nadia);
-        caseAct(install, marcus, ActivityType.MEETING, Channel.IN_PERSON, "Walked the client through the final inspection report on site.", 4);
-        caseAct(install, nadia, ActivityType.EMAIL, Channel.EMAIL, "Sent the yearly maintenance plan; client signed and returned it.", 3);
-    }
-
-    private ServiceCase serviceCase(String title, String company, CasePriority priority, int dueInDays, AppUser by,
-                                    CaseStatus status, int createdDaysAgo, String description) {
-        ServiceCase c = new ServiceCase();
-        c.setTitle(title);
-        c.setDescription(description);
-        c.setCustomer(byName.get(company));
-        c.setPriority(priority);
-        c.setDueDate(LocalDate.now().plusDays(dueInDays));
-        c.setCreatedBy(by);
-        c.setStatus(status);
-        c.setCreatedAt(now.minusDays(createdDaysAgo));
-        return cases.save(c);
-    }
-
-    private void assign(ServiceCase c, AppUser u, boolean done, int doneDaysAgo, String note) {
-        CaseAssignment a = new CaseAssignment();
-        a.setServiceCase(c);
-        a.setUser(u);
-        a.setAssignedAt(c.getCreatedAt());
-        if (done) {
-            a.setStatus(AssignmentStatus.DONE);
-            a.setDoneAt(now.minusDays(doneDaysAgo));
-            a.setDoneNote(note);
-        }
-        caseAssignments.save(a);
-    }
-
-    private void caseAct(ServiceCase c, AppUser by, ActivityType type, Channel channel, String outcome, int daysAgo) {
-        Activity a = act(c.getCustomer().getCompanyName(), type, channel, outcome, daysAgo, by);
-        a.setServiceCase(c);
-    }
-
-    private AppUser user(String name, String email, Role role, Team team) {
+    private AppUser user(String name, String email, Role role) {
         AppUser u = new AppUser();
         u.setFullName(name);
         u.setEmail(email);
         u.setRole(role);
-        u.setTeam(team);
         u.setPasswordHash(encoder.encode(DEMO_PASSWORD));
         u.setCreatedAt(now.minusDays(120));
         return users.save(u);
     }
 
-    /** Creates the customer plus its "New lead created" entry and, if needed, one status change. */
+    /** Creates the customer plus its CustomerService.NEW_CUSTOMER_REASON entry and, if needed, one status change. */
     private void customer(String company, String contact, String email, String phone, CustomerStatus status,
                           AppUser owner, int createdDaysAgo, AppUser changedBy, String reason) {
         Customer c = new Customer();
@@ -210,7 +138,7 @@ public class DataSeeder implements CommandLineRunner {
         customers.save(c);
         byName.put(company, c);
 
-        history(c, null, CustomerStatus.NEGOTIATING, owner, c.getCreatedAt(), "New lead created");
+        history(c, null, CustomerStatus.NEGOTIATING, owner, c.getCreatedAt(), CustomerService.NEW_CUSTOMER_REASON);
         if (status != CustomerStatus.NEGOTIATING) {
             history(c, CustomerStatus.NEGOTIATING, status, changedBy, c.getCreatedAt().plusDays(createdDaysAgo / 2), reason);
         }
@@ -247,6 +175,7 @@ public class DataSeeder implements CommandLineRunner {
         f.setDueDate(LocalDate.now().plusDays(dueInDays));
         f.setNotes(notes);
         f.setStatus(done ? FollowUpStatus.COMPLETED : FollowUpStatus.PENDING); // overdue ones get flagged on startup
+        if (done) f.setCompletedAt(now.minusDays(1));
         followUps.save(f);
     }
 }

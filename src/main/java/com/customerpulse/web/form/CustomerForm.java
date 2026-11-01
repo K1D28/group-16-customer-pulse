@@ -19,14 +19,13 @@ public class CustomerForm {
     @Size(max = 100, message = "Up to 100 characters")
     private String email;
 
-    @Size(max = 30, message = "Up to 30 characters")
-    @Pattern(regexp = "^$|^[+0-9 ()\\-]{6,30}$", message = "Use digits, spaces, +, - or ()")
+    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Enter a 10-digit phone number (numbers only)")
     private String phone;
 
-    /** Only Managers may choose; Staff always own what they create. */
+    /** Only used on create, and only by Managers; Staff always own what they create. Later changes use FR-09. */
     private Long ownerId;
 
-    /** Set when the user chose "Save anyway" after the similar-name warning. */
+    /** Set when the user chose "Save anyway" after the similar-name warning (FR-12). */
     private boolean confirmDuplicate;
 
     public static CustomerForm from(Customer c) {

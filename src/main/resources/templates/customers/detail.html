@@ -30,8 +30,8 @@
                         <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-label="More actions"><span class="ms">more_horiz</span></button>
                         <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" th:href="@{/customers/{id}/edit(id=${customer.id})}"><span class="ms ms-sm">edit</span> Edit details</a>
-                            <form th:if="${me.manager}" th:action="@{/customers/{id}/delete(id=${customer.id})}" method="post"
-                                  th:attr="data-confirm='Delete ' + ${customer.companyName} + ' and all of its activities, follow-ups and status history? This cannot be undone.'">
+                            <form th:action="@{/customers/{id}/delete(id=${customer.id})}" method="post"
+                                  th:attr="data-confirm='Delete ' + ${customer.companyName} + '? It will disappear from all lists, search and alerts. Its history stays in the database.'">
                                 <button class="dropdown-item text-danger" type="submit"><span class="ms ms-sm">delete</span> Delete customer</button>
                             </form>
                         </div>
@@ -56,10 +56,8 @@
                                             <span class="tl-type" th:text="${a.activityType.label}">Call</span>
                                             <span class="tl-chip" th:text="${a.channel.label}">Phone</span>
                                             <span class="tl-meta" th:text="${@fmt.dateTime(a.activityDate)} + ' · ' + ${a.user.fullName}">date · user</span>
-                                            <a th:if="${a.serviceCase != null}" class="tl-chip case-chip" th:href="@{/cases/{id}(id=${a.serviceCase.id})}"
-                                               th:text="${a.serviceCase.code}" th:title="${a.serviceCase.title}">CASE-0001</a>
                                         </div>
-                                        <div class="tl-actions d-flex gap-1" th:if="${me.manager or a.user.id == me.id}">
+                                        <div class="tl-actions d-flex gap-1">
                                             <a class="icon-btn" style="width:30px;height:30px" th:href="@{/followups/new(customerId=${customer.id},activityId=${a.id})}" title="Add follow-up from this activity"><span class="ms ms-sm">event_upcoming</span></a>
                                             <a class="icon-btn" style="width:30px;height:30px" th:href="@{/activities/{id}/edit(id=${a.id})}" title="Edit"><span class="ms ms-sm">edit</span></a>
                                             <form th:action="@{/activities/{id}/delete(id=${a.id})}" method="post" data-confirm="Delete this activity?">
@@ -98,23 +96,6 @@
                         </div>
                     </section>
 
-                    <!-- Cases on this customer -->
-                    <section class="cp-card">
-                        <div class="cp-card-head">
-                            <h2><span class="ms">work</span> Cases <span class="text-faint fw-normal" th:text="'(' + ${customerCases.size()} + ')'"></span></h2>
-                            <a th:if="${me.manager}" class="small fw-semibold" th:href="@{/cases/new(customerId=${customer.id})}">New case</a>
-                        </div>
-                        <div th:if="${customerCases.isEmpty()}" class="empty">No cases for this customer.</div>
-                        <a th:each="sc : ${customerCases}" class="alert-item" th:href="@{/cases/{id}(id=${sc.id})}"
-                           th:with="p=${@caseService.progress(caseTeams.get(sc.id) ?: {})}">
-                            <div class="flex-grow-1" style="min-width:0">
-                                <div class="alert-title text-truncate" th:text="${sc.title}">Case</div>
-                                <div class="alert-meta" th:text="${sc.code} + ' · ' + ${p.done} + ' of ' + ${p.total} + ' done'"></div>
-                            </div>
-                            <span class="pill" th:classappend="${sc.status.css}" th:text="${sc.status.label}"></span>
-                        </a>
-                    </section>
-
                     <!-- Follow-ups (FR-05) -->
                     <section class="cp-card">
                         <div class="cp-card-head">
@@ -137,12 +118,11 @@
                                 <button class="icon-btn" style="width:30px;height:30px" data-bs-toggle="dropdown" aria-label="Follow-up actions"><span class="ms ms-sm">more_vert</span></button>
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <form th:if="${f.open}" th:action="@{/followups/{id}/complete(id=${f.id})}" method="post">
-                                        <button class="dropdown-item" type="submit"><span class="ms ms-sm">check</span> Mark complete</button>
+                                        <button class="dropdown-item" type="submit"><span class="ms ms-sm">check</span> Complete</button>
                                     </form>
-                                    <form th:unless="${f.open}" th:action="@{/followups/{id}/reopen(id=${f.id})}" method="post">
-                                        <button class="dropdown-item" type="submit"><span class="ms ms-sm">undo</span> Reopen</button>
-                                    </form>
-                                    <a class="dropdown-item" th:href="@{/followups/{id}/edit(id=${f.id})}"><span class="ms ms-sm">edit</span> Edit</a>
+                                    <a th:if="${f.open}" class="dropdown-item" th:href="@{/followups/{id}/edit(id=${f.id})}"><span class="ms ms-sm">edit</span> Edit</a>
+                                    <span th:unless="${f.open}" class="dropdown-item-text text-faint small"
+                                          th:text="'Completed ' + ${@fmt.dateTime(f.completedAt)} + ' · read-only'">Completed</span>
                                     <form th:action="@{/followups/{id}/delete(id=${f.id})}" method="post" data-confirm="Delete this follow-up?">
                                         <button class="dropdown-item text-danger" type="submit"><span class="ms ms-sm">delete</span> Delete</button>
                                     </form>
@@ -198,8 +178,8 @@
                     </div>
                 </div>
                 <div>
-                    <label class="form-label" for="reason">Reason</label>
-                    <textarea class="form-control" id="reason" name="reason" rows="3" maxlength="255" data-count="255"
+                    <label class="form-label" for="reason">Reason <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="reason" name="reason" rows="3" maxlength="255" data-count="255" required
                               placeholder="e.g. Customer asked to pause until budget is approved"></textarea>
                     <div class="form-text text-end" data-count-for="reason"></div>
                 </div>
@@ -223,20 +203,19 @@
             <div class="modal-body">
                 <label class="form-label" for="ownerId">New owner</label>
                 <select class="form-select" id="ownerId" name="ownerId" required>
-                    <option value="">Choose an active team member…</option>
+                    <option value="">Choose an active user…</option>
                     <option th:each="u : ${users}" th:if="${u.id != customer.owner.id}" th:value="${u.id}"
                             th:text="${u.fullName} + ' (' + ${u.role.label} + ')'"></option>
                 </select>
-                <p class="form-text mt-2">Only active people in your team are listed. The new owner sees all earlier activities, follow-ups and status history straight away.</p>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="moveFollowUps" name="moveFollowUps" value="true" checked>
-                    <label class="form-check-label" for="moveFollowUps"
-                           th:text="'Also move ' + ${customer.owner.firstName} + '\'s open follow-ups on this customer to the new owner'">Also move open follow-ups</label>
+                <p class="form-text mt-2">Only active users other than the current owner are listed. The new owner sees all earlier activities, follow-ups and status history straight away.</p>
+                <div class="alert alert-info flash mb-0" role="status">
+                    <span class="ms">event_upcoming</span>
+                    <span th:text="${openFollowUps} + (${openFollowUps == 1} ? ' open follow-up' : ' open follow-ups') + ' will be transferred to the new owner. Completed follow-ups keep their original assignee.'">2 open follow-ups will be transferred.</span>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Reassign</button>
+                <button type="submit" class="btn btn-primary">Confirm reassignment</button>
             </div>
         </form>
     </div>

@@ -28,25 +28,18 @@
         <a th:href="@{/customers}" th:classappend="${#strings.startsWith(currentPath,'/customers')} ? 'active'">
             <span class="ms">corporate_fare</span> Customers
         </a>
-        <a th:href="@{/cases}" th:classappend="${#strings.startsWith(currentPath,'/cases')} ? 'active'">
-            <span class="ms">work</span> Cases
-            <span th:if="${myCaseCount > 0}" class="badge rounded-pill text-bg-primary" th:text="${myCaseCount}" title="Cases waiting for your part">2</span>
-        </a>
-        <a th:href="@{/followups}" th:classappend="${#strings.startsWith(currentPath,'/followups')} ? 'active'">
-            <span class="ms">assignment_late</span> Follow-ups
-        </a>
     </nav>
     <th:block th:if="${me.manager}">
         <div class="nav-section small-caps mt-3">Manager</div>
         <nav class="side-nav">
-            <a th:href="@{/activities}" th:classappend="${#strings.startsWith(currentPath,'/activities') and !#strings.startsWith(currentPath,'/activities/')} ? 'active'">
-                <span class="ms">history</span> Activity log
-            </a>
-            <a th:href="@{/team}" th:classappend="${#strings.startsWith(currentPath,'/team')} ? 'active'">
-                <span class="ms">groups</span> Team overview
+            <a th:href="@{/overview}" th:classappend="${#strings.startsWith(currentPath,'/overview')} ? 'active'">
+                <span class="ms">monitoring</span> Customer overview
             </a>
             <a th:href="@{/users}" th:classappend="${#strings.startsWith(currentPath,'/users')} ? 'active'">
                 <span class="ms">manage_accounts</span> User management
+            </a>
+            <a th:href="@{/audit}" th:classappend="${#strings.startsWith(currentPath,'/audit')} ? 'active'">
+                <span class="ms">policy</span> Audit log
             </a>
         </nav>
     </th:block>
@@ -55,7 +48,7 @@
             <span class="avatar" th:text="${me.initials}">NO</span>
             <div class="flex-grow-1 min-w-0" style="min-width:0">
                 <div class="fw-semibold text-truncate" th:text="${me.fullName}">Nadia Osei</div>
-                <div class="text-faint text-truncate" style="font-size:12px" th:text="${me.role.label} + ' · ' + ${me.team.name}">Staff · Team A</div>
+                <div class="text-faint text-truncate" style="font-size:12px" th:text="${me.role.label}">Staff</div>
             </div>
             <form th:action="@{/logout}" method="post">
                 <button class="icon-btn" type="submit" title="Log out" aria-label="Log out"><span class="ms">logout</span></button>
@@ -85,7 +78,7 @@
             <div class="dropdown-menu dropdown-menu-end p-3" style="min-width:240px">
                 <div class="fw-semibold" th:text="${me.fullName}">Nadia Osei</div>
                 <div class="text-muted" th:text="${me.email}">nadia@example.com</div>
-                <div class="text-muted mb-2" th:text="${me.team.name}">Team A</div>
+                <div class="mb-2"></div>
                 <span class="pill no-dot role-pill" th:classappend="${me.manager} ? 'manager'" th:text="${me.role.label}">Staff</span>
                 <hr>
                 <form th:action="@{/logout}" method="post">

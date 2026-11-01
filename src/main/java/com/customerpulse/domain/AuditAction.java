@@ -1,14 +1,14 @@
 package com.customerpulse.domain;
 
-public enum CaseStatus {
-    OPEN("Open", "cs-open"),
-    IN_PROGRESS("In progress", "cs-progress"),
-    CLOSED("Closed", "cs-closed");
+public enum AuditAction {
+    CREATE("Create", "fu-completed"),
+    UPDATE("Update", "fu-pending"),
+    DELETE("Delete", "fu-overdue");
 
     private final String label;
     private final String css;
 
-    CaseStatus(String label, String css) {
+    AuditAction(String label, String css) {
         this.label = label;
         this.css = css;
     }

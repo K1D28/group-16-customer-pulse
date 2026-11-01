@@ -27,14 +27,10 @@ public class AppUser {
     @Column(nullable = false, length = 20)
     private Role role = Role.STAFF;
 
-    /** Inactive users cannot log in or be given customers, cases or follow-ups. */
+    /** Inactive users cannot log in or be chosen as owners (FR-10). Users are never deleted. */
     @ColumnDefault("true")
     @Column(nullable = false)
     private boolean active = true;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "team_id", nullable = false)
-    private Team team;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -70,9 +66,6 @@ public class AppUser {
     public void setRole(Role role) { this.role = role; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
-    public Team getTeam() { return team; }
-    public void setTeam(Team team) { this.team = team; }
-    public boolean sameTeam(AppUser other) { return other != null && team.getId().equals(other.getTeam().getId()); }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

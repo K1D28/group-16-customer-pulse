@@ -19,12 +19,18 @@ public class DashboardService {
 
     /** A customer is stagnant after more than this many days without activity. */
     public static final int STAGNANT_DAYS = 14;
+    /** Only these statuses can be stagnant; HOLD, INACTIVE and LOST are never flagged. */
+    public static final Set<CustomerStatus> WATCHED = EnumSet.of(CustomerStatus.NEGOTIATING, CustomerStatus.ACTIVE);
 
-    public record StagnantItem(Customer customer, LocalDateTime lastActivity, Long daysInactive) {
+    /**
+     * @param lastActivity latest non-deleted activity, or null when there is none yet
+     * @param referenceDate the latest activity date, or the customer's creation date if there is no activity
+     */
+    public record StagnantItem(Customer customer, LocalDateTime lastActivity, LocalDateTime referenceDate, long daysInactive) {
         public boolean isNeverContacted() { return lastActivity == null; }
     }
 
-    public record Alerts(List<FollowUp> overdue, List<StagnantItem> stagnant) {
+    public record Alerts(List<FollowUp> overdue, List<StagnantItem> stagnant, LocalDateTime refreshedAt) {
         public int total() { return overdue.size() + stagnant.size(); }
     }
 
@@ -43,39 +49,36 @@ public class DashboardService {
         this.guard = guard;
     }
 
+    /** Data as of now; the page does not refresh itself. Oldest due date first; most days inactive first. */
     public Alerts alerts(AppUser me) {
-        // Oldest due date first = most urgent
-        List<FollowUp> overdue = followUps.findInScope(guard.scope(me), guard.team(me), EnumSet.of(FollowUpStatus.OVERDUE));
-        return new Alerts(overdue, stagnant(guard.scope(me), guard.team(me)));
+        List<FollowUp> overdue = followUps.findInScope(guard.scope(me), EnumSet.of(FollowUpStatus.OVERDUE));
+        return new Alerts(overdue, stagnant(guard.scope(me)), LocalDateTime.now());
     }
 
-    /** Never-contacted customers first, then the longest silence. */
-    public List<StagnantItem> stagnant(Long ownerId, Long teamId) {
+    /** Stagnant: NEGOTIATING or ACTIVE, and more than 14 days since the latest activity (or creation date). */
+    public List<StagnantItem> stagnant(Long ownerId) {
         Map<Long, LocalDateTime> last = customerService.lastActivityByCustomer();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = LocalDate.now();
         List<StagnantItem> result = new ArrayList<>();
-        for (Customer c : customers.findInScope(ownerId, teamId)) {
-            LocalDateTime when = last.get(c.getId());
-            if (when == null) {
-                result.add(new StagnantItem(c, null, null));
-            } else {
-                long days = ChronoUnit.DAYS.between(when.toLocalDate(), now.toLocalDate());
-                if (days > STAGNANT_DAYS) result.add(new StagnantItem(c, when, days));
-            }
+        for (Customer c : customers.findInScopeWithStatus(ownerId, WATCHED)) {
+            LocalDateTime lastActivity = last.get(c.getId());
+            LocalDateTime reference = lastActivity != null ? lastActivity : c.getCreatedAt();
+            long days = ChronoUnit.DAYS.between(reference.toLocalDate(), today);
+            if (days > STAGNANT_DAYS) result.add(new StagnantItem(c, lastActivity, reference, days));
         }
-        result.sort(Comparator.comparing((StagnantItem s) -> s.daysInactive() == null ? Long.MAX_VALUE : s.daysInactive())
-                .reversed());
+        result.sort(Comparator.comparingLong(StagnantItem::daysInactive).reversed()
+                .thenComparing(s -> s.customer().getCompanyName()));
         return result;
     }
 
     public List<FollowUp> upcoming(AppUser me, int days) {
         LocalDate limit = LocalDate.now().plusDays(days);
-        return followUps.findInScope(guard.scope(me), guard.team(me), EnumSet.of(FollowUpStatus.PENDING)).stream()
+        return followUps.findInScope(guard.scope(me), EnumSet.of(FollowUpStatus.PENDING)).stream()
                 .filter(f -> !f.getDueDate().isAfter(limit))
                 .toList();
     }
 
     public long activitiesThisWeek(AppUser me) {
-        return activities.countSince(guard.scope(me), guard.team(me), LocalDateTime.now().minusDays(7));
+        return activities.countSince(guard.scope(me), LocalDateTime.now().minusDays(7));
     }
 }

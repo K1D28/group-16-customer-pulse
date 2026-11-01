@@ -1,6 +1,6 @@
 # Customer Pulse (prototype)
 
-Customer status and activity monitoring platform, built from the Group 16 SRS (v1.1).
+Customer status and activity monitoring platform, built to match the Group 16 SRS (v1.1).
 Spring Boot 3 · Spring Data JPA · Thymeleaf · Bootstrap 5 + custom CSS · H2 (local) / MySQL (Cloud SQL).
 
 The original front-end-only mock-up is kept in `prototype/index.html` for reference.
@@ -15,102 +15,77 @@ mvn spring-boot:run
 mvn -DskipTests package && java -jar target/customer-pulse.jar
 ```
 
-Open http://localhost:8080. A fresh database starts **clean**: 3 teams, one Manager each, and no other data
-(password `password123` for all, also one click away on the login page):
+Open http://localhost:8080. A fresh database starts with the first Manager (created at installation, FR-10) and
+demo data: Manager `priya@example.com`, Staff `nadia@example.com` and `marcus@example.com`, all with password
+`password123`. Each one is a one-click login on the login page. For a clean start with only the Manager,
+set `app.seed-demo-data=false` (or `APP_SEED_DEMO_DATA=false`). Phone numbers are 10 digits, numbers only.
 
-| Team | Manager |
-|---|---|
-| Team A | priya@example.com |
-| Team B | daniel@example.com |
-| Team C | sofia@example.com |
-
-Each manager adds their own staff under **User management** (new users join that manager's team), then customers and cases.
-Want sample data instead? Set `app.seed-demo-data=true` to add 2 staff, 15 customers, activities, follow-ups and cases to Team A.
-
-By default the app uses an **embedded H2** database stored in `./data/`. Stop the app and delete that folder to start clean again.
+By default the app uses an **embedded H2** database stored in `./data/`. Stop the app and delete that folder to start clean.
 Managers can browse it at http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/customerpulse`, user `sa`, no password).
 
-## How this maps to the assignment
+**Upgrading an older database:** earlier versions had teams and cases. Start from an empty database
+(delete `./data/`, or drop and recreate the MySQL schema), because the old `users.team_id` column is NOT NULL.
 
-| Rubric item | Where |
-|---|---|
-| **Controls: Listing / Searching** | Customers list with search + status filter, 10 per page (`/customers`); activity log with type/channel filters (`/activities`, Manager-only); follow-up tabs (`/followups`); team overview filters (`/team`) |
-| **Controls: Creating** | Customers, activities, follow-ups, users |
-| **Controls: Updating** | Edit customer, activity, follow-up, user; change status; complete/reopen follow-up |
-| **Controls: Deleting** | Delete customer (removes its activities, follow-ups and history), activity, follow-up, user (blocked while they still own customers) |
-| **Controls: Managing related entities** | Customer page manages its activities, follow-ups (optionally linked to an activity) and status history; reassign owner; follow-up assignee |
-| **5 related entities** | `AppUser` (users), `Customer` (customers), `Activity` (activities), `FollowUp` (follow_ups), `StatusHistory` (status_history), plus `Team` (teams), `ServiceCase` (cases) and `CaseAssignment` (case_assignments) in `src/main/java/com/customerpulse/domain` |
-| **Front-end** | Thymeleaf + Bootstrap 5 + `static/css/app.css`; works down to 360 px wide |
-| **Database (H2 / MySQL)** | H2 by default; `mysql` profile for Cloud SQL (`application-mysql.properties`) |
-| **Deployment on GCP** | `app.yaml` (App Engine) or `Dockerfile` (Cloud Run), see below |
+All dates use Thailand time (UTC+7).
 
-### Relationships
+## Screens (SRS section 4)
+
+| UI | Screen | Path | Who |
+|---|---|---|---|
+| UI-01 | Login | `/login` | everyone |
+| UI-02 | Dashboard: overdue follow-ups and stagnant customers, "last refreshed" time | `/dashboard` | Staff (own customers), Manager (all) |
+| UI-03 | Customer list and search, 10 per page | `/customers` | |
+| UI-04 | Add / edit customer, duplicate block and warning, delete | `/customers/new`, `/customers/{id}/edit` | |
+| UI-05 | Customer detail: profile, follow-ups, status history, timeline | `/customers/{id}` | |
+| UI-06 | Log / edit activity | `/activities/new`, `/activities/{id}/edit` | |
+| UI-07 | Add / edit follow-up | `/followups/new`, `/followups/{id}/edit` | |
+| UI-08 | Change status dialog | on UI-05 | |
+| UI-09 | Reassign owner dialog | on UI-05 | Manager |
+| UI-10 | Customer overview | `/overview` | Manager |
+| UI-11 | User management | `/users` | Manager |
+| UI-12 | Audit log | `/audit` | Manager |
+
+## Data model (Appendix A)
+
+Six tables in `src/main/java/com/customerpulse/domain`: `users` (`AppUser`), `customers`, `activities`,
+`follow_ups`, `status_history`, `audit_log`.
 
 ```
-teams 1──* users                (team_id)
 users 1──* customers            (owner_id)
 users 1──* activities           (user_id = who logged it)
 users 1──* follow_ups           (assigned_user_id)
 users 1──* status_history       (changed_by_user_id)
-users 1──* cases                (created_by_user_id)
-customers 1──* activities / follow_ups / status_history / cases
-activities 1──* follow_ups      (activity_id, optional)
-cases 1──* case_assignments *──1 users   (who is working on the case)
-cases 1──* activities           (case_id, optional)
+users 1──* audit_log            (user_id)
+customers 1──* activities / follow_ups / status_history
+customers 0..1──* audit_log     (customer_id; empty for user records)
+activities 0..1──* follow_ups   (activity_id, optional)
 ```
 
-### SRS features covered
+Customers, activities and follow-ups are soft-deleted (`deleted_at`); users are deactivated (`is_active`), never deleted.
 
-- FR-01 login with bcrypt-hashed passwords; generic "Invalid email or password"; 30-minute idle timeout
-- FR-02 customer create/edit with a "similar name already exists" warning (e.g. "ABC Co." vs "ABC Company Ltd."); new customers start as NEGOTIATING with a "New lead created" history entry
-- FR-03 timeline newest first, "No activity recorded" when empty
-- FR-04 log activity (type, channel, outcome, date/time) with per-field errors, then an offer to add a follow-up
-- FR-05 follow-ups: PENDING → COMPLETED; PENDING past due becomes OVERDUE at startup and every night
-- FR-06 status change + history entry in one transaction; same status = nothing saved
-- FR-07 dashboard alerts: overdue follow-ups and customers with no activity for more than 14 days (or none), most urgent first
-- FR-08 team overview: counts per status, workload per person, recent status changes, filters
-- FR-09 reassign owner (Manager)
-- FR-10 user management (Manager): unique email, role MANAGER/STAFF, can't delete a user who owns customers
-- FR-11 search by company/contact name and status
-- NFR-02 access rules are checked on the server: Staff get a 403 for other people's customers (including typed URLs), `/users` and `/team`
+## SRS rules implemented
 
-## Scenario tests
+- **FR-01** bcrypt passwords, generic "Invalid email or password", 30-minute idle timeout, deactivated users are signed out on their next request
+- **FR-02** Staff create (owned by themselves), view, edit and soft-delete their own customers; Managers do this for all and choose the owner on create. New customers start NEGOTIATING with a "New customer created" history entry
+- **FR-03** timeline newest first, "No activity recorded"; soft-deleted customers are "not found"
+- **FR-04** activity date cannot be in the future; outcome up to 2,000 characters; the owner or a Manager can edit or delete any activity of the customer (the original logger is kept); deleting keeps linked follow-ups
+- **FR-05** follow-ups are assigned to the customer's owner automatically; due date today or later when set or changed; OVERDUE with a new date returns to PENDING; completed ones are read-only (no reopen) and record the completion time; a daily job at 00:05 marks past-due PENDING as OVERDUE (not audited)
+- **FR-06** status change needs a reason (1–255 characters); same status saves nothing; status, history and audit entry in one transaction
+- **FR-07** overdue follow-ups (oldest first) and stagnant customers: NEGOTIATING/ACTIVE with no activity for more than 14 days, counted from the latest activity or the creation date (most days first)
+- **FR-08** Customer overview: counts per status, customer list filtered by owner and status, status changes and activities filtered by date range (default last 30 days), workload per person
+- **FR-09** reassign to another active user; all open follow-ups move in the same transaction (the dialog shows how many); completed ones keep their assignee
+- **FR-10** users are never deleted; deactivation is refused for yourself, for anyone who still owns customers, and for the last active Manager (also applies to changing their role); passwords at least 8 characters, also on reset
+- **FR-11** search by company or contact name with an optional status filter, 10 per page, sorted by company name
+- **FR-12** exact duplicate names (ignoring upper/lower case) are blocked; similar names (one contains the other, ignoring case, spaces and punctuation; 3+ characters) show up to 5 names with owners and "Save anyway"
+- **FR-13 / NFR-07** every create, update and soft delete by a user is written to `audit_log` in the same transaction; the audit log has no edit or delete; passwords are recorded only as "password changed"
+- **NFR-02** all access rules are checked on the server, including direct URLs and record IDs for activities and follow-ups
 
-`src/test/java/com/customerpulse/ScenarioTests.java` runs the 8 scenarios from *Customer Pulse — Scenario-Based Use Cases* in order on a clean start, one test per scenario, with each main and alternative step checked:
+## Tests
 
-| # | Scenario | Test |
-|---|---|---|
-| 1 | Registering a new customer (FR-02) | `scenario1_registeringANewCustomer` |
-| 2 | Recording a meeting and scheduling a follow-up (FR-04, FR-05) | `scenario2_…` |
-| 3 | Detecting and completing an overdue follow-up (FR-05, FR-07) | `scenario3_…` |
-| 4 | Identifying a stagnant customer (FR-03, FR-07) | `scenario4_…` |
-| 5 | Changing a customer's lifecycle status (FR-06) | `scenario5_…` |
-| 6 | Reassigning to another staff member (FR-09) | `scenario6_…` |
-| 7 | Preventing unauthorized access (NFR-02) | `scenario7_…` |
-| 8 | Monitoring the team's customer statuses (FR-08) | `scenario8_…` |
+Run with `mvn test`.
 
-Run them with `mvn test`.
-
-**Deactivating users (Scenario 6):** on User management, a Manager can **Deactivate** someone who is leaving (after reassigning their customers). Inactive users cannot log in and are not offered as owners, case assignees or follow-up assignees; the server refuses them too. When reassigning a customer, the Manager can also move the old owner's open follow-ups to the new owner.
-
-## Teams (added after the SRS)
-
-- Every user belongs to one team. A **Manager only sees their own team**: its staff, customers, cases, follow-ups, activity and status history. Other teams' records return "no access" or "not found".
-- Customer owners, case assignees and follow-up assignees must be in the same team.
-- A Manager can **rename their team** on Team overview (**Rename team**). Names must be unique.
-- The **Activity log** page is Manager-only. Staff still log activities from a customer or a case.
-
-## Cases (added after the SRS)
-
-A Manager creates a **case** for a customer and assigns one or more employees.
-
-1. **Manager** → Cases → New case: title, customer, priority, optional due date, what needs doing, and the assignees.
-2. **Assignees** see it under Cases (the menu badge counts cases waiting for them) and on their dashboard. They can **log activity on the case**, even when someone else owns the customer.
-3. Each assignee clicks **Mark my part done** (with an optional note), and can undo it with **Not done yet**.
-4. Status: **Open** (nothing done yet) → **In progress** (first activity or first part done) → **Closed** automatically when **every** assignee is done. No new activity can be logged on a closed case.
-5. The Manager can also close a case early, reopen it (everyone has to mark done again), edit it, change the assignees (adding someone to a closed case reopens it), or delete it. Deleting a case keeps its activities on the customer timeline.
-
-The case page shows the progress bar ("1 of 2 done"), each assignee's state, the case activity, and the customer's contact details. Case activities also appear on the customer timeline with a `CASE-0001` tag.
+- `ScenarioTests` runs the 8 scenarios from *Customer Pulse — Scenario-Based Use Cases* in order on a clean start.
+- `CustomerPulseApplicationTests` checks the SRS rules above against the demo data.
 
 ## Project layout
 
@@ -118,10 +93,10 @@ The case page shows the progress bar ("1 of 2 done"), each assignee's state, the
 src/main/java/com/customerpulse/
   domain/       entities + enums
   repository/   Spring Data JPA repositories
-  service/      business rules and access checks (AccessGuard)
+  service/      business rules, access checks (AccessGuard), audit log (AuditService)
   security/     Spring Security config, login lookup
   web/          MVC controllers, form classes
-  config/       DataSeeder (demo data on first start)
+  config/       InitialSetup (first Manager), DataSeeder (optional demo data)
 src/main/resources/
   templates/    Thymeleaf pages
   static/       CSS, JS, favicon
@@ -140,7 +115,7 @@ gcloud sql instances describe customer-pulse-db --format='value(connectionName)'
 # -> PROJECT:asia-southeast1:customer-pulse-db
 ```
 
-Tables are created automatically on first start (`ddl-auto=update`), and the 3 teams and their managers are added if the `users` table is empty. Change their passwords after the first login.
+Tables are created automatically on first start (`ddl-auto=update`), and the first Manager account is added if the `users` table is empty (set `APP_FIRST_MANAGER_EMAIL` / `APP_FIRST_MANAGER_PASSWORD` to choose it). Change the password after the first login.
 
 ### 2a. App Engine
 

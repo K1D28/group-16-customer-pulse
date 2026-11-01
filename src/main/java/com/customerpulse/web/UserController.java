@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
-/** UI-06 / FR-10: Manager-only (secured in SecurityConfig). */
+/** UI-11 / FR-10: Manager-only (secured in SecurityConfig). Users are deactivated, never deleted. */
 @Controller
 @RequestMapping("/users")
 public class UserController {
@@ -33,9 +33,9 @@ public class UserController {
 
     @GetMapping
     public String list(Model model) {
-        var all = users.team(currentUser.get());
+        var all = users.all();
         Map<Long, Long> owned = new HashMap<>();
-        for (AppUser u : all) owned.put(u.getId(), customers.countByOwnerId(u.getId()));
+        for (AppUser u : all) owned.put(u.getId(), customers.countByOwnerIdAndDeletedAtIsNull(u.getId()));
         model.addAttribute("users", all);
         model.addAttribute("owned", owned);
         return "users/list";
@@ -55,18 +55,22 @@ public class UserController {
         if (!errors.hasFieldErrors("email") && users.emailTaken(form.getEmail(), null)) {
             errors.rejectValue("email", "taken", "That email is already in use.");
         }
-        if (errors.hasErrors()) {
-            model.addAttribute("editUser", null);
-            return "users/form";
+        if (!errors.hasErrors()) {
+            try {
+                AppUser u = users.create(form, currentUser.get());
+                flash.addFlashAttribute("success", "User " + u.getFullName() + " created.");
+                return "redirect:/users";
+            } catch (BusinessException e) {
+                model.addAttribute("error", e.getMessage());
+            }
         }
-        AppUser u = users.create(form, currentUser.get());
-        flash.addFlashAttribute("success", "User " + u.getFullName() + " created.");
-        return "redirect:/users";
+        model.addAttribute("editUser", null);
+        return "users/form";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        AppUser u = users.get(id, currentUser.get());
+        AppUser u = users.get(id);
         model.addAttribute("form", UserForm.from(u));
         model.addAttribute("editUser", u);
         return "users/form";
@@ -75,7 +79,7 @@ public class UserController {
     @PostMapping("/{id}")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") UserForm form, BindingResult errors,
                          Model model, RedirectAttributes flash) {
-        AppUser u = users.get(id, currentUser.get());
+        AppUser u = users.get(id);
         checkPassword(form, errors, false);
         if (!errors.hasFieldErrors("email") && users.emailTaken(form.getEmail(), id)) {
             errors.rejectValue("email", "taken", "That email is already in use.");
@@ -111,18 +115,7 @@ public class UserController {
         return "redirect:/users";
     }
 
-    @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes flash) {
-        try {
-            String name = users.get(id, currentUser.get()).getFullName();
-            users.delete(id, currentUser.get());
-            flash.addFlashAttribute("success", "User " + name + " deleted.");
-        } catch (BusinessException e) {
-            flash.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/users";
-    }
-
+    /** At least 8 characters, for both the initial password and a reset. */
     private static void checkPassword(UserForm form, BindingResult errors, boolean required) {
         String p = form.getPassword();
         if (p == null || p.isBlank()) {

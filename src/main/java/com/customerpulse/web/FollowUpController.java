@@ -1,6 +1,8 @@
 package com.customerpulse.web;
 
-import com.customerpulse.domain.*;
+import com.customerpulse.domain.AppUser;
+import com.customerpulse.domain.Customer;
+import com.customerpulse.domain.FollowUp;
 import com.customerpulse.security.CurrentUser;
 import com.customerpulse.service.*;
 import com.customerpulse.web.form.FollowUpForm;
@@ -11,10 +13,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDate;
+import java.util.Objects;
 
+/** UI-07 / FR-05: add, edit, complete and delete follow-ups. */
 @Controller
 @RequestMapping("/followups")
 public class FollowUpController {
@@ -23,44 +25,21 @@ public class FollowUpController {
     private final FollowUpService followUps;
     private final CustomerService customers;
     private final ActivityService activities;
-    private final UserService users;
 
     public FollowUpController(CurrentUser currentUser, FollowUpService followUps, CustomerService customers,
-                              ActivityService activities, UserService users) {
+                              ActivityService activities) {
         this.currentUser = currentUser;
         this.followUps = followUps;
         this.customers = customers;
         this.activities = activities;
-        this.users = users;
-    }
-
-    /** Follow-up tasks list with tabs: open / overdue / completed / all. */
-    @GetMapping
-    public String list(@RequestParam(defaultValue = "open") String tab, Model model) {
-        Set<FollowUpStatus> statuses = switch (tab) {
-            case "overdue" -> EnumSet.of(FollowUpStatus.OVERDUE);
-            case "completed" -> EnumSet.of(FollowUpStatus.COMPLETED);
-            case "all" -> EnumSet.allOf(FollowUpStatus.class);
-            default -> FollowUpService.OPEN;
-        };
-        AppUser me = currentUser.get();
-        List<FollowUp> items = followUps.inScope(me, statuses);
-        if ("completed".equals(tab)) items = items.reversed();
-        model.addAttribute("items", items);
-        model.addAttribute("tab", tab);
-        model.addAttribute("openCount", followUps.inScope(me, FollowUpService.OPEN).size());
-        model.addAttribute("overdueCount", followUps.inScope(me, EnumSet.of(FollowUpStatus.OVERDUE)).size());
-        return "followups/list";
     }
 
     @GetMapping("/new")
     public String newForm(@RequestParam(required = false) Long customerId,
                           @RequestParam(required = false) Long activityId, Model model) {
-        AppUser me = currentUser.get();
         FollowUpForm form = new FollowUpForm();
-        form.setAssignedUserId(me.getId());
         if (customerId != null) {
-            customers.getAccessible(customerId, me);
+            customers.getAccessible(customerId, currentUser.get());
             form.setCustomerId(customerId);
             form.setActivityId(activityId);
         }
@@ -71,6 +50,7 @@ public class FollowUpController {
     @PostMapping
     public String create(@Valid @ModelAttribute("form") FollowUpForm form, BindingResult errors,
                          Model model, RedirectAttributes flash) {
+        rejectPastDate(form.getDueDate(), errors);
         if (errors.hasErrors()) return formView(model, null, form.getCustomerId());
         try {
             FollowUp f = followUps.create(form, currentUser.get());
@@ -83,8 +63,12 @@ public class FollowUpController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
-        FollowUp f = followUps.getEditable(id, currentUser.get());
+    public String editForm(@PathVariable Long id, Model model, RedirectAttributes flash) {
+        FollowUp f = followUps.getAccessible(id, currentUser.get());
+        if (!f.isOpen()) {
+            flash.addFlashAttribute("info", "Completed follow-ups are read-only.");
+            return "redirect:/customers/" + f.getCustomer().getId();
+        }
         model.addAttribute("form", FollowUpForm.from(f));
         return formView(model, f, f.getCustomer().getId());
     }
@@ -93,8 +77,10 @@ public class FollowUpController {
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") FollowUpForm form,
                          BindingResult errors, Model model, RedirectAttributes flash) {
         AppUser me = currentUser.get();
-        FollowUp existing = followUps.getEditable(id, me);
+        FollowUp existing = followUps.getAccessible(id, me);
         form.setCustomerId(existing.getCustomer().getId());
+        // The "today or later" rule applies only when the date is set or changed
+        if (!Objects.equals(form.getDueDate(), existing.getDueDate())) rejectPastDate(form.getDueDate(), errors);
         if (errors.hasErrors()) return formView(model, existing, form.getCustomerId());
         try {
             followUps.update(id, form, me);
@@ -107,37 +93,30 @@ public class FollowUpController {
     }
 
     @PostMapping("/{id}/complete")
-    public String complete(@PathVariable Long id, @RequestParam(required = false) String back, RedirectAttributes flash) {
+    public String complete(@PathVariable Long id, RedirectAttributes flash) {
         FollowUp f = followUps.complete(id, currentUser.get());
         flash.addFlashAttribute("success", "Follow-up marked as completed.");
-        return redirectBack(back, f.getCustomer().getId());
-    }
-
-    @PostMapping("/{id}/reopen")
-    public String reopen(@PathVariable Long id, @RequestParam(required = false) String back, RedirectAttributes flash) {
-        FollowUp f = followUps.reopen(id, currentUser.get());
-        flash.addFlashAttribute("success", "Follow-up reopened.");
-        return redirectBack(back, f.getCustomer().getId());
+        return "redirect:/customers/" + f.getCustomer().getId();
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, @RequestParam(required = false) String back, RedirectAttributes flash) {
+    public String delete(@PathVariable Long id, RedirectAttributes flash) {
         Long customerId = followUps.delete(id, currentUser.get());
         flash.addFlashAttribute("success", "Follow-up deleted.");
-        return redirectBack(back, customerId);
+        return "redirect:/customers/" + customerId;
     }
 
-    /** Only local paths are accepted, so this cannot redirect off-site. */
-    private static String redirectBack(String back, Long customerId) {
-        if (back != null && back.startsWith("/") && !back.startsWith("//")) return "redirect:" + back;
-        return "redirect:/customers/" + customerId;
+    private static void rejectPastDate(LocalDate due, BindingResult errors) {
+        if (due != null && due.isBefore(LocalDate.now())) {
+            errors.rejectValue("dueDate", "past", "The due date must be today or later");
+        }
     }
 
     private String formView(Model model, FollowUp existing, Long customerId) {
         AppUser me = currentUser.get();
         model.addAttribute("followUp", existing);
         model.addAttribute("customerOptions", customers.listInScope(me));
-        model.addAttribute("userOptions", users.activeTeam(me));
+        model.addAttribute("today", LocalDate.now());
         if (customerId != null) {
             Customer c = customers.getAccessible(customerId, me);
             model.addAttribute("customer", c);

@@ -22,11 +22,6 @@ public class Activity {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
-    /** Optional case this activity was logged under. */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "case_id")
-    private ServiceCase serviceCase;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "activity_type", nullable = false, length = 20)
     private ActivityType activityType;
@@ -35,7 +30,7 @@ public class Activity {
     @Column(nullable = false, length = 20)
     private Channel channel;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, length = 2000)
     private String outcome;
 
     @Column(name = "activity_date", nullable = false)
@@ -43,6 +38,10 @@ public class Activity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** Soft-delete time; null = not deleted (FR-04). */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @PrePersist
     void onCreate() {
@@ -55,8 +54,6 @@ public class Activity {
     public void setCustomer(Customer customer) { this.customer = customer; }
     public AppUser getUser() { return user; }
     public void setUser(AppUser user) { this.user = user; }
-    public ServiceCase getServiceCase() { return serviceCase; }
-    public void setServiceCase(ServiceCase serviceCase) { this.serviceCase = serviceCase; }
     public ActivityType getActivityType() { return activityType; }
     public void setActivityType(ActivityType activityType) { this.activityType = activityType; }
     public Channel getChannel() { return channel; }
@@ -67,4 +64,7 @@ public class Activity {
     public void setActivityDate(LocalDateTime activityDate) { this.activityDate = activityDate; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public boolean isDeleted() { return deletedAt != null; }
 }

@@ -16,9 +16,6 @@ public class ActivityForm {
     @NotNull(message = "Choose a customer")
     private Long customerId;
 
-    /** Optional: the case this activity is logged under. */
-    private Long caseId;
-
     @NotNull(message = "Choose an activity type")
     private ActivityType activityType;
 
@@ -36,7 +33,6 @@ public class ActivityForm {
     public static ActivityForm from(Activity a) {
         ActivityForm f = new ActivityForm();
         f.customerId = a.getCustomer().getId();
-        f.caseId = a.getServiceCase() == null ? null : a.getServiceCase().getId();
         f.activityType = a.getActivityType();
         f.channel = a.getChannel();
         f.outcome = a.getOutcome();
@@ -46,8 +42,6 @@ public class ActivityForm {
 
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
-    public Long getCaseId() { return caseId; }
-    public void setCaseId(Long caseId) { this.caseId = caseId; }
     public ActivityType getActivityType() { return activityType; }
     public void setActivityType(ActivityType activityType) { this.activityType = activityType; }
     public Channel getChannel() { return channel; }

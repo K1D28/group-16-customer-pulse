@@ -12,7 +12,12 @@
             <div class="page-head">
                 <div>
                     <h1 th:text="'Welcome back, ' + ${me.firstName}">Welcome back</h1>
-                    <p th:text="${me.manager} ? 'Here is what needs attention across ' + ${me.team.name} + ' today.' : 'Here is what needs attention on your accounts today.'"></p>
+                    <p th:text="${me.manager} ? 'Here is what needs attention across all customers today.' : 'Here is what needs attention on your accounts today.'"></p>
+                    <p class="small text-faint mb-0">
+                        <span class="ms ms-sm">schedule</span>
+                        Last refreshed <span th:text="${@fmt.dateTime(alerts.refreshedAt)}">1 Nov 2026, 09:00</span>.
+                        Reload the page to see new data.
+                    </p>
                 </div>
                 <a class="btn btn-light" th:href="@{/customers/new}"><span class="ms">add_business</span> New customer</a>
             </div>
@@ -23,25 +28,25 @@
                     <a class="cp-card kpi text-decoration-none text-reset" th:href="@{/customers}">
                         <span class="kpi-icon tone-blue"><span class="ms">corporate_fare</span></span>
                         <span class="kpi-value tnum" th:text="${customerTotal}">0</span>
-                        <span class="kpi-label" th:text="${me.manager} ? 'Team customers' : 'My customers'">Customers</span>
+                        <span class="kpi-label" th:text="${me.manager} ? 'All customers' : 'My customers'">Customers</span>
                     </a>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <a class="cp-card kpi text-decoration-none text-reset" th:href="@{/followups(tab='overdue')}">
+                    <a class="cp-card kpi text-decoration-none text-reset" href="#overdue">
                         <span class="kpi-icon tone-red"><span class="ms">alarm</span></span>
                         <span class="kpi-value tnum" th:text="${alerts.overdue.size()}">0</span>
                         <span class="kpi-label">Overdue follow-ups</span>
                     </a>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <div class="cp-card kpi">
+                    <a class="cp-card kpi text-decoration-none text-reset" href="#stagnant">
                         <span class="kpi-icon tone-amber"><span class="ms">hourglass_empty</span></span>
                         <span class="kpi-value tnum" th:text="${alerts.stagnant.size()}">0</span>
-                        <span class="kpi-label" th:text="'Quiet for ' + ${stagnantDays} + '+ days'">Stagnant</span>
-                    </div>
+                        <span class="kpi-label" th:text="'Stagnant (over ' + ${stagnantDays} + ' days)'">Stagnant</span>
+                    </a>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <a class="cp-card kpi text-decoration-none text-reset" th:href="${me.manager} ? @{/activities} : @{/customers}">
+                    <a class="cp-card kpi text-decoration-none text-reset" th:href="${me.manager} ? @{/overview} : @{/customers}">
                         <span class="kpi-icon tone-green"><span class="ms">bolt</span></span>
                         <span class="kpi-value tnum" th:text="${weekActivities}">0</span>
                         <span class="kpi-label">Activities in last 7 days</span>
@@ -50,16 +55,16 @@
             </div>
 
             <div th:if="${alerts.total() == 0}" class="alert alert-success flash mb-4" role="status">
-                <span class="ms">task_alt</span> No alerts. No overdue follow-ups and no quiet customers.
+                <span class="ms">task_alt</span> No alerts
             </div>
 
             <div class="row g-4">
                 <!-- Alerts (FR-07) -->
                 <div class="col-xl-8 d-flex flex-column gap-4">
-                    <section class="cp-card">
+                    <section class="cp-card" id="overdue">
                         <div class="cp-card-head">
                             <h2><span class="ms" style="color:var(--cp-red)">alarm</span> Overdue follow-ups</h2>
-                            <a class="small fw-semibold" th:href="@{/followups(tab='overdue')}">View all</a>
+                            <span class="text-muted small">Oldest due date first</span>
                         </div>
                         <div th:if="${alerts.overdue.isEmpty()}" class="empty"><span class="ms">task_alt</span>No alerts. Every follow-up is on time.</div>
                         <a th:each="f : ${alerts.overdue}" class="alert-item" th:href="@{/customers/{id}(id=${f.customer.id})}">
@@ -79,10 +84,10 @@
                         </a>
                     </section>
 
-                    <section class="cp-card">
+                    <section class="cp-card" id="stagnant">
                         <div class="cp-card-head">
                             <h2><span class="ms" style="color:var(--cp-amber)">hourglass_empty</span> Stagnant customers</h2>
-                            <span class="text-muted small" th:text="'No activity for more than ' + ${stagnantDays} + ' days'"></span>
+                            <span class="text-muted small" th:text="'Negotiating or Active, no activity for more than ' + ${stagnantDays} + ' days'"></span>
                         </div>
                         <div th:if="${alerts.stagnant.isEmpty()}" class="empty"><span class="ms">task_alt</span>No alerts. Every customer was contacted recently.</div>
                         <a th:each="s : ${alerts.stagnant}" class="alert-item" th:href="@{/customers/{id}(id=${s.customer.id})}">
@@ -95,31 +100,14 @@
                                 </div>
                             </div>
                             <div class="text-end">
-                                <div class="fw-semibold" style="color:var(--cp-amber)"
-                                     th:text="${s.neverContacted} ? 'Never contacted' : ${s.daysInactive} + ' days inactive'">41 days</div>
-                                <div class="alert-meta" th:text="${s.neverContacted} ? 'No activity recorded' : 'Last: ' + ${@fmt.date(s.lastActivity)}">Last</div>
+                                <div class="fw-semibold" style="color:var(--cp-amber)" th:text="${s.daysInactive} + ' days inactive'">41 days</div>
+                                <div class="alert-meta" th:text="${s.neverContacted} ? 'No activity yet · created ' + ${@fmt.date(s.referenceDate)} : 'Last activity: ' + ${@fmt.date(s.lastActivity)}">Last</div>
                             </div>
                         </a>
                     </section>
                 </div>
 
                 <div class="col-xl-4 d-flex flex-column gap-4">
-                    <section class="cp-card">
-                        <div class="cp-card-head">
-                            <h2><span class="ms">work</span> My cases</h2>
-                            <a class="small fw-semibold" th:href="@{/cases}">All cases</a>
-                        </div>
-                        <div th:if="${myCases.isEmpty()}" class="empty">No cases waiting for your part.</div>
-                        <a th:each="a : ${myCases}" class="alert-item" th:href="@{/cases/{id}(id=${a.serviceCase.id})}">
-                            <span class="alert-icon tone-blue"><span class="ms ms-sm">assignment_ind</span></span>
-                            <div class="flex-grow-1" style="min-width:0">
-                                <div class="alert-title text-truncate" th:text="${a.serviceCase.title}">Case</div>
-                                <div class="alert-meta text-truncate" th:text="${a.serviceCase.code} + ' · ' + ${a.serviceCase.customer.companyName}"></div>
-                            </div>
-                            <span class="pill no-dot" th:classappend="${a.serviceCase.priority.css}" th:text="${a.serviceCase.priority.label}"></span>
-                        </a>
-                    </section>
-
                     <section class="cp-card">
                         <div class="cp-card-head"><h2><span class="ms">donut_large</span> Status mix</h2></div>
                         <div class="cp-card-body">
@@ -142,7 +130,6 @@
                     <section class="cp-card">
                         <div class="cp-card-head">
                             <h2><span class="ms">event_upcoming</span> Due this week</h2>
-                            <a class="small fw-semibold" th:href="@{/followups}">All</a>
                         </div>
                         <div th:if="${upcoming.isEmpty()}" class="empty">Nothing due in the next 7 days.</div>
                         <a th:each="f : ${upcoming}" class="alert-item" th:href="@{/customers/{id}(id=${f.customer.id})}">
@@ -157,7 +144,7 @@
                     <section class="cp-card">
                         <div class="cp-card-head">
                             <h2><span class="ms">history</span> Recent activity</h2>
-                            <a th:if="${me.manager}" class="small fw-semibold" th:href="@{/activities}">Activity log</a>
+                            <a th:if="${me.manager}" class="small fw-semibold" th:href="@{/overview}">Customer overview</a>
                         </div>
                         <div th:if="${recent.isEmpty()}" class="empty">No activity recorded.</div>
                         <a th:each="a : ${recent}" class="alert-item" th:href="@{/customers/{id}(id=${a.customer.id})}">

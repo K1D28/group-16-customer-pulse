@@ -12,15 +12,11 @@
             <div class="page-head">
                 <div>
                     <a class="small fw-semibold text-decoration-none"
-                       th:href="${serviceCase != null} ? @{/cases/{id}(id=${serviceCase.id})} : (${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : (${me.manager} ? @{/activities} : @{/dashboard}))">
+                       th:href="${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : @{/dashboard}">
                         <span class="ms ms-sm">arrow_back</span> Back
                     </a>
                     <h1 class="mt-1" th:text="${activity == null} ? 'Log activity' : 'Edit activity'">Log activity</h1>
-                    <p th:if="${serviceCase == null}">Record a call, meeting, message or quotation so the whole team can see it.</p>
-                    <p th:if="${serviceCase != null}">
-                        For case <strong th:text="${serviceCase.code} + ': ' + ${serviceCase.title}"></strong>
-                        · <span th:text="${serviceCase.customer.companyName}"></span>
-                    </p>
+                    <p>Record a call, meeting, message or quotation so the whole team can see it.</p>
                 </div>
             </div>
 
@@ -30,12 +26,11 @@
                     <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger flash mb-0" role="alert">
                         <span class="ms">error</span> Please fix the highlighted fields.
                     </div>
+                    <div th:if="${error}" class="alert alert-danger flash mb-0" role="alert">
+                        <span class="ms">error</span><span th:text="${error}"></span>
+                    </div>
 
-                    <th:block th:if="${serviceCase != null}">
-                        <input type="hidden" th:field="*{caseId}">
-                        <input type="hidden" th:field="*{customerId}">
-                    </th:block>
-                    <div th:if="${serviceCase == null}">
+                    <div>
                         <label class="form-label" for="customerId">Customer <span class="text-danger">*</span></label>
                         <select class="form-select" th:field="*{customerId}" th:errorclass="is-invalid" th:disabled="${activity != null}">
                             <option value="">Choose a customer…</option>
@@ -69,7 +64,9 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="activityDate">Date and time <span class="text-danger">*</span></label>
-                            <input class="form-control" type="datetime-local" th:field="*{activityDate}" th:errorclass="is-invalid">
+                            <input class="form-control" type="datetime-local" th:field="*{activityDate}" th:errorclass="is-invalid"
+                                   th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd''T''HH:mm')}">
+                            <div class="form-text">Cannot be in the future.</div>
                             <div class="invalid-feedback" th:errors="*{activityDate}"></div>
                         </div>
                     </div>
@@ -78,11 +75,14 @@
                         <label class="form-label" for="outcome">Outcome <span class="text-danger">*</span></label>
                         <textarea class="form-control" th:field="*{outcome}" th:errorclass="is-invalid" rows="4" maxlength="2000"
                                   placeholder="What happened, and what was agreed?"></textarea>
-                        <div class="invalid-feedback" th:errors="*{outcome}"></div>
+                        <div class="d-flex justify-content-between">
+                            <div class="invalid-feedback d-block" th:errors="*{outcome}"></div>
+                            <div class="form-text ms-auto">Up to 2,000 characters.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
-                    <a class="btn btn-light" th:href="${serviceCase != null} ? @{/cases/{id}(id=${serviceCase.id})} : (${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : (${me.manager} ? @{/activities} : @{/dashboard}))">Cancel</a>
+                    <a class="btn btn-light" th:href="${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : @{/dashboard}">Cancel</a>
                     <button class="btn btn-primary" type="submit"><span class="ms">save</span> Save</button>
                 </div>
             </form>

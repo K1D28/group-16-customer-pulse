@@ -2,7 +2,6 @@ package com.customerpulse.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,10 +15,8 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/favicon.svg", "/error").permitAll()
-                // NFR-02: only Managers reach user management, team overview and the DB console
-                .requestMatchers("/users/**", "/team/**", "/h2-console/**").hasRole("MANAGER")
-                // The activity log page is for Managers; Staff can still log activities (/activities/new, POST /activities)
-                .requestMatchers(HttpMethod.GET, "/activities").hasRole("MANAGER")
+                // NFR-02: only Managers reach the customer overview, user management, the audit log and the DB console
+                .requestMatchers("/overview/**", "/users/**", "/audit/**", "/h2-console/**").hasRole("MANAGER")
                 .anyRequest().authenticated())
             .formLogin(form -> form
                 .loginPage("/login")

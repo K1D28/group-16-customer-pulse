@@ -2,7 +2,6 @@ package com.customerpulse.web;
 
 import com.customerpulse.domain.*;
 import com.customerpulse.security.CurrentUser;
-import com.customerpulse.service.CaseService;
 import com.customerpulse.service.DashboardService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.ui.Model;
@@ -15,12 +14,9 @@ public class GlobalModelAdvice {
 
     private final CurrentUser currentUser;
     private final DashboardService dashboard;
-    private final CaseService cases;
-
-    public GlobalModelAdvice(CurrentUser currentUser, DashboardService dashboard, CaseService cases) {
+    public GlobalModelAdvice(CurrentUser currentUser, DashboardService dashboard) {
         this.currentUser = currentUser;
         this.dashboard = dashboard;
-        this.cases = cases;
     }
 
     @ModelAttribute
@@ -33,7 +29,6 @@ public class GlobalModelAdvice {
         currentUser.find().ifPresent(me -> {
             model.addAttribute("me", me);
             model.addAttribute("alertCount", dashboard.alerts(me).total());
-            model.addAttribute("myCaseCount", cases.myOpenWork(me).size());
         });
     }
 }

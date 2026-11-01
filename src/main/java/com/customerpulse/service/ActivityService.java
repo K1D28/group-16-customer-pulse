@@ -2,107 +2,86 @@ package com.customerpulse.service;
 
 import com.customerpulse.domain.*;
 import com.customerpulse.repository.ActivityRepository;
-import com.customerpulse.repository.FollowUpRepository;
 import com.customerpulse.web.form.ActivityForm;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
+/** FR-04: log, edit and soft-delete activities for customers in the user's scope. */
 @Service
 @Transactional
 public class ActivityService {
 
-    public static final int PAGE_SIZE = 15;
-
     private final ActivityRepository activities;
-    private final FollowUpRepository followUps;
     private final CustomerService customerService;
-    private final CaseService caseService;
     private final AccessGuard guard;
+    private final AuditService audit;
 
-    public ActivityService(ActivityRepository activities, FollowUpRepository followUps,
-                           CustomerService customerService, CaseService caseService, AccessGuard guard) {
+    public ActivityService(ActivityRepository activities, CustomerService customerService, AccessGuard guard,
+                           AuditService audit) {
         this.activities = activities;
-        this.followUps = followUps;
         this.customerService = customerService;
-        this.caseService = caseService;
         this.guard = guard;
+        this.audit = audit;
     }
 
-    @Transactional(readOnly = true)
-    public List<Activity> forCase(Long caseId) {
-        return activities.findByServiceCaseIdOrderByActivityDateDesc(caseId);
-    }
-
+    /** FR-03: the customer's timeline, newest first, without deleted activities. */
     @Transactional(readOnly = true)
     public List<Activity> timeline(Long customerId) {
-        return activities.findByCustomerIdOrderByActivityDateDesc(customerId);
+        return activities.findByCustomerIdAndDeletedAtIsNullOrderByActivityDateDesc(customerId);
     }
 
     @Transactional(readOnly = true)
-    public Page<Activity> search(AppUser me, ActivityType type, Channel channel, String q, int page) {
-        String text = (q == null || q.isBlank()) ? null : q.trim();
-        return activities.search(guard.scope(me), guard.team(me), type, channel, text, PageRequest.of(Math.max(page, 0), PAGE_SIZE));
+    public List<Activity> recent(AppUser me, LocalDateTime from, LocalDateTime to, int limit) {
+        return activities.findRecent(guard.scope(me), from, to, PageRequest.of(0, limit));
     }
 
-    @Transactional(readOnly = true)
-    public List<Activity> recent(AppUser me, int limit) {
-        return activities.search(guard.scope(me), guard.team(me), null, null, null, PageRequest.of(0, limit)).getContent();
-    }
-
-    /**
-     * FR-04: the logged-in user is saved as the logger.
-     * With a case, any assignee may log it, even when someone else owns the customer.
-     */
+    /** The logged-in user is saved as the logger. */
     public Activity log(ActivityForm form, AppUser me) {
+        Customer c = customerService.getAccessible(form.getCustomerId(), me);
         Activity a = new Activity();
-        if (form.getCaseId() != null) {
-            ServiceCase sc = caseService.getViewable(form.getCaseId(), me);
-            if (!caseService.canLog(sc, me)) {
-                throw new AccessDeniedException(sc.isClosed()
-                        ? "This case is closed." : "Only people assigned to this case can log activity on it.");
-            }
-            a.setServiceCase(sc);
-            a.setCustomer(sc.getCustomer());
-        } else {
-            a.setCustomer(customerService.getAccessible(form.getCustomerId(), me));
-        }
+        a.setCustomer(c);
         a.setUser(me);
         apply(a, form);
         activities.save(a);
-        if (a.getServiceCase() != null) caseService.onActivityLogged(a.getServiceCase());
+        audit.created(me, AuditRecordType.ACTIVITY, a.getId(), c, AuditService.snapshot(a));
         return a;
     }
 
+    /** The customer's owner or a Manager can change any of its activities, including a previous owner's. */
     @Transactional(readOnly = true)
     public Activity getEditable(Long id, AppUser me) {
-        Activity a = activities.findById(id).orElseThrow(() -> new NotFoundException("Activity not found"));
-        if (!me.isManager() && !a.getUser().getId().equals(me.getId())) {
-            throw new AccessDeniedException("You can only change activities you logged.");
-        }
+        Activity a = activities.findById(id).filter(x -> !x.isDeleted())
+                .orElseThrow(() -> new NotFoundException("Activity not found"));
+        guard.checkAccess(me, a.getCustomer());
         return a;
     }
 
+    /** The original logger is kept; the editor is recorded in the audit log. */
     public Activity update(Long id, ActivityForm form, AppUser me) {
         Activity a = getEditable(id, me);
+        Map<String, Object> before = AuditService.snapshot(a);
         apply(a, form);
+        audit.updated(me, AuditRecordType.ACTIVITY, a.getId(), a.getCustomer(), before, AuditService.snapshot(a));
         return a;
     }
 
-    /** Follow-ups created from this activity are kept; they just lose the link. */
+    /** Soft delete. Follow-ups created from this activity are not changed and keep their link. */
     public Long delete(Long id, AppUser me) {
         Activity a = getEditable(id, me);
-        Long customerId = a.getCustomer().getId();
-        followUps.detachActivity(id);
-        activities.deleteById(id);
-        return customerId;
+        a.setDeletedAt(LocalDateTime.now());
+        audit.deleted(me, AuditRecordType.ACTIVITY, a.getId(), a.getCustomer(), AuditService.snapshot(a));
+        return a.getCustomer().getId();
     }
 
     private void apply(Activity a, ActivityForm f) {
+        if (f.getActivityDate() != null && f.getActivityDate().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("The activity date cannot be in the future.");
+        }
         a.setActivityType(f.getActivityType());
         a.setChannel(f.getChannel());
         a.setOutcome(f.getOutcome().trim());

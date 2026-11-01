@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * The 8 scenarios from "Customer Pulse — Scenario-Based Use Cases", run in order on a clean start
- * (3 teams, one manager each). Each step of a scenario is a check below.
+ * (one team; only the first Manager exists). Each step of a scenario is a check below.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:scenarios;MODE=MySQL;DATABASE_TO_LOWER=TRUE",
@@ -48,13 +48,12 @@ class ScenarioTests {
     @Autowired DashboardService dashboardService;
     @Autowired org.springframework.transaction.support.TransactionTemplate tx;
 
-    /** Runs a check inside a transaction so linked records (owner, team, ...) can be read. */
+    /** Runs a check inside a transaction so linked records (owner, ...) can be read. */
     <T> T inTx(java.util.function.Supplier<T> work) { return tx.execute(st -> work.get()); }
 
     static Long abcId, xyzId, quoteFollowUpId;
 
     static RequestPostProcessor priya() { return user("priya@example.com").roles("MANAGER"); }
-    static RequestPostProcessor daniel() { return user("daniel@example.com").roles("MANAGER"); }
     static RequestPostProcessor nadia() { return user("nadia@example.com").roles("STAFF"); }
     static RequestPostProcessor marcus() { return user("marcus@example.com").roles("STAFF"); }
 
@@ -68,7 +67,7 @@ class ScenarioTests {
                     .param("fullName", s[0]).param("email", s[1]).param("password", "welcome123").param("role", "STAFF"))
                .andExpect(redirectedUrl("/users"));
         }
-        assertThat(inTx(() -> u("nadia@example.com").getTeam().getName())).isEqualTo("Team A");
+        assertThat(u("nadia@example.com").getRole()).isEqualTo(Role.STAFF);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -86,19 +85,23 @@ class ScenarioTests {
         // 3–5. Enter details and save
         String url = mvc.perform(post("/customers").with(nadia()).with(csrf())
                         .param("companyName", "ABC Company").param("contactName", "Somchai Boon")
-                        .param("email", "somchai@abc.co.th").param("phone", "+66 81 234 5678"))
+                        .param("email", "somchai@abc.co.th").param("phone", "0812345678"))
                 .andExpect(redirectedUrlPattern("/customers/*"))
                 .andExpect(flash().attribute("success", containsString("created as Negotiating")))
                 .andReturn().getResponse().getRedirectedUrl();
         abcId = Long.valueOf(url.substring(url.lastIndexOf('/') + 1));
         // 6. Initial status NEGOTIATING
         assertThat(customer(abcId).getCurrentStatus()).isEqualTo(CustomerStatus.NEGOTIATING);
-        // 7. First history entry "New lead created"
-        List<StatusHistory> h = history.findByCustomerIdOrderByChangedAtDesc(abcId);
+        // 7. First history entry "New customer created"
+        List<StatusHistory> h = history.findByCustomerIdOrderByChangedAtDescIdDesc(abcId);
         assertThat(h).hasSize(1);
-        assertThat(h.get(0).getReason()).isEqualTo("New lead created");
+        assertThat(h.get(0).getReason()).isEqualTo("New customer created");
         assertThat(h.get(0).getPreviousStatus()).isNull();
-        // Alternative: similar name warns and does not save
+        // Alternative: an exact match (ignoring upper/lower case) is blocked
+        mvc.perform(post("/customers").with(nadia()).with(csrf()).param("companyName", "abc company").param("confirmDuplicate", "true"))
+           .andExpect(status().isOk())
+           .andExpect(content().string(containsString("A customer with this company name already exists (owner: Nadia Osei)")));
+        // Alternative: a similar name warns and does not save until "Save anyway"
         mvc.perform(post("/customers").with(nadia()).with(csrf()).param("companyName", "ABC Co."))
            .andExpect(status().isOk()).andExpect(content().string(containsString("similar name already exists")));
         assertThat(customers.count()).isEqualTo(1);
@@ -121,6 +124,12 @@ class ScenarioTests {
            .andExpect(content().string(containsString("Outcome is required")))
            .andExpect(content().string(containsString("Date and time are required")));
         assertThat(activities.count()).isZero();
+        // Alternative: a future date is rejected
+        mvc.perform(post("/activities").with(nadia()).with(csrf())
+                        .param("customerId", abcId.toString()).param("activityType", "MEETING").param("channel", "IN_PERSON")
+                        .param("outcome", "Planned meeting").param("activityDate", LocalDateTime.now().plusDays(1).format(DT)))
+           .andExpect(status().isOk()).andExpect(content().string(containsString("cannot be in the future")));
+        assertThat(activities.count()).isZero();
         // 3–5. MEETING / IN_PERSON, date, outcome, save
         mvc.perform(post("/activities").with(nadia()).with(csrf())
                         .param("customerId", abcId.toString()).param("activityType", "MEETING").param("channel", "IN_PERSON")
@@ -129,7 +138,7 @@ class ScenarioTests {
            // 6. Added to timeline and a follow-up is offered
            .andExpect(redirectedUrl("/customers/" + abcId))
            .andExpect(flash().attributeExists("offerFollowUpFor"));
-        Activity meeting = activities.findByCustomerIdOrderByActivityDateDesc(abcId).get(0);
+        Activity meeting = activities.findByCustomerIdAndDeletedAtIsNullOrderByActivityDateDesc(abcId).get(0);
         assertThat(meeting.getActivityType()).isEqualTo(ActivityType.MEETING);
         assertThat(meeting.getUser().getEmail()).isEqualTo("nadia@example.com"); // user is fetched with the timeline
         mvc.perform(get("/customers/" + abcId).with(nadia()))
@@ -137,14 +146,14 @@ class ScenarioTests {
         // 7. Follow-up three days later
         mvc.perform(post("/followups").with(nadia()).with(csrf())
                         .param("customerId", abcId.toString()).param("activityId", meeting.getId().toString())
-                        .param("assignedUserId", u("nadia@example.com").getId().toString())
                         .param("dueDate", LocalDate.now().plusDays(3).toString())
                         .param("notes", "Send revised quotation to ABC Company"))
            .andExpect(redirectedUrl("/customers/" + abcId));
-        // 8. Saved as PENDING
-        FollowUp f = followUps.findByCustomerIdOrderByDueDateAsc(abcId).get(0);
+        // 8. Saved as PENDING and assigned to the customer's owner automatically
+        FollowUp f = followUps.findByCustomerIdAndDeletedAtIsNullOrderByDueDateAsc(abcId).get(0);
         quoteFollowUpId = f.getId();
         assertThat(f.getStatus()).isEqualTo(FollowUpStatus.PENDING);
+        assertThat(f.getAssignedUser().getEmail()).isEqualTo("nadia@example.com");
         assertThat(f.getActivity().getId()).isEqualTo(meeting.getId()); // activity is fetched with the list
     }
 
@@ -155,7 +164,7 @@ class ScenarioTests {
         FollowUp f = followUps.findById(quoteFollowUpId).orElseThrow();
         f.setDueDate(LocalDate.now().minusDays(1));
         followUps.save(f);
-        // 3. The daily job marks it OVERDUE (NFR-09)
+        // 3. The daily job marks it OVERDUE (FR-05)
         followUpService.refreshOverdue();
         assertThat(followUps.findById(quoteFollowUpId).orElseThrow().getStatus()).isEqualTo(FollowUpStatus.OVERDUE);
         // 1–4. Dashboard shows it with customer and due date
@@ -168,7 +177,9 @@ class ScenarioTests {
         // 6–7. Complete it
         mvc.perform(post("/followups/" + quoteFollowUpId + "/complete").with(nadia()).with(csrf()))
            .andExpect(status().is3xxRedirection());
-        assertThat(followUps.findById(quoteFollowUpId).orElseThrow().getStatus()).isEqualTo(FollowUpStatus.COMPLETED);
+        FollowUp done = followUps.findById(quoteFollowUpId).orElseThrow();
+        assertThat(done.getStatus()).isEqualTo(FollowUpStatus.COMPLETED);
+        assertThat(done.getCompletedAt()).isNotNull();
         // Alternative: nothing in scope -> "No alerts"
         mvc.perform(get("/dashboard").with(marcus())).andExpect(content().string(containsString("No alerts")));
     }
@@ -219,19 +230,23 @@ class ScenarioTests {
         // 6. Profile shows ACTIVE
         assertThat(customer(abcId).getCurrentStatus()).isEqualTo(CustomerStatus.ACTIVE);
         // Expected: who, when, why are kept
-        StatusHistory latest = history.findByCustomerIdOrderByChangedAtDesc(abcId).get(0);
+        StatusHistory latest = history.findByCustomerIdOrderByChangedAtDescIdDesc(abcId).get(0);
         assertThat(latest.getPreviousStatus()).isEqualTo(CustomerStatus.NEGOTIATING);
         assertThat(latest.getNewStatus()).isEqualTo(CustomerStatus.ACTIVE);
         assertThat(latest.getChangedBy().getEmail()).isEqualTo("nadia@example.com"); // fetched with the history
         assertThat(latest.getChangedAt()).isNotNull();
         assertThat(latest.getReason()).isEqualTo(reason);
         // Alternative: same status again -> message, nothing saved
-        int before = history.findByCustomerIdOrderByChangedAtDesc(abcId).size();
+        int before = history.findByCustomerIdOrderByChangedAtDescIdDesc(abcId).size();
         mvc.perform(post("/customers/" + abcId + "/status").with(nadia()).with(csrf()).param("newStatus", "ACTIVE"))
            .andExpect(flash().attribute("info", containsString("already Active")));
-        assertThat(history.findByCustomerIdOrderByChangedAtDesc(abcId)).hasSize(before);
-        // 7. Manager sees it in Team Overview
-        mvc.perform(get("/team").with(priya())).andExpect(content().string(containsString(reason)));
+        // Alternative: a blank reason shows an error and saves nothing
+        mvc.perform(post("/customers/" + abcId + "/status").with(nadia()).with(csrf()).param("newStatus", "HOLD").param("reason", "  "))
+           .andExpect(flash().attribute("error", containsString("reason is required")));
+        assertThat(history.findByCustomerIdOrderByChangedAtDescIdDesc(abcId)).hasSize(before);
+        assertThat(customer(abcId).getCurrentStatus()).isEqualTo(CustomerStatus.ACTIVE);
+        // 7. Manager sees it in the Customer Overview
+        mvc.perform(get("/overview").with(priya())).andExpect(content().string(containsString(reason)));
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -239,12 +254,13 @@ class ScenarioTests {
     void scenario6_reassigningToAnotherStaffMember() throws Exception {
         // Nadia still has an open follow-up on ABC
         mvc.perform(post("/followups").with(nadia()).with(csrf())
-                .param("customerId", abcId.toString()).param("assignedUserId", u("nadia@example.com").getId().toString())
+                .param("customerId", abcId.toString())
                 .param("dueDate", LocalDate.now().plusDays(5).toString()).param("notes", "Send signed contract copy"));
-        // 1–2. Team Overview, search ABC, open profile
-        mvc.perform(get("/team").param("q", "ABC").with(priya()))
-           .andExpect(model().attribute("customers", hasSize(1)))
+        // 1–2. Search ABC, open profile (the dialog shows how many open follow-ups will move)
+        mvc.perform(get("/customers").param("q", "ABC").with(priya()))
            .andExpect(content().string(containsString("ABC Company")));
+        mvc.perform(get("/customers/" + abcId).with(priya()))
+           .andExpect(content().string(containsString("1 open follow-up will be transferred")));
         mvc.perform(get("/customers/" + abcId).with(priya())).andExpect(status().isOk());
 
         // Alternative: replacement is not an active user -> refused
@@ -260,11 +276,12 @@ class ScenarioTests {
         mvc.perform(formLogin("/login").userParameter("email").user("kim@example.com").password("welcome123"))
            .andExpect(redirectedUrl("/login?error"));
 
-        // 3–5. Reassign to Marcus (active), moving open follow-ups
+        // 3–5. Reassign to Marcus (active); open follow-ups always move with the customer
         Long marcusId = u("marcus@example.com").getId();
         mvc.perform(post("/customers/" + abcId + "/owner").with(priya()).with(csrf())
-                        .param("ownerId", marcusId.toString()).param("moveFollowUps", "true"))
-           .andExpect(flash().attribute("success", containsString("Marcus Lindqvist")));
+                        .param("ownerId", marcusId.toString()))
+           .andExpect(flash().attribute("success", containsString("Marcus Lindqvist")))
+           .andExpect(flash().attribute("success", containsString("1 open follow-up moved")));
         assertThat(inTx(() -> customer(abcId).getOwner().getId())).isEqualTo(marcusId);
         // 6. Appears in the new owner's list
         mvc.perform(get("/customers").with(marcus())).andExpect(content().string(containsString("ABC Company")));
@@ -273,7 +290,7 @@ class ScenarioTests {
            .andExpect(content().string(containsString("Customer requested a revised quotation.")))
            .andExpect(content().string(containsString("Send revised quotation to ABC Company")))
            .andExpect(content().string(containsString("Send signed contract copy")));
-        List<FollowUp> fus = followUps.findByCustomerIdOrderByDueDateAsc(abcId);
+        List<FollowUp> fus = followUps.findByCustomerIdAndDeletedAtIsNullOrderByDueDateAsc(abcId);
         assertThat(fus).filteredOn(FollowUp::isOpen).isNotEmpty().allMatch(x -> x.getAssignedUser().getId().equals(marcusId));
         assertThat(fus).filteredOn(x -> !x.isOpen()).isNotEmpty().allMatch(x -> x.getAssignedUser().getEmail().equals("nadia@example.com"));
         // The previous owner no longer has access
@@ -296,45 +313,49 @@ class ScenarioTests {
         mvc.perform(post("/customers/" + xyzId + "/status").with(marcus()).with(csrf()).param("newStatus", "LOST"))
            .andExpect(status().isForbidden());
         assertThat(customer(xyzId).getCurrentStatus()).isEqualTo(CustomerStatus.NEGOTIATING);
-        // Alternative: the team's Manager is allowed
+        // ...including activities and follow-ups opened by their ID
+        Long xyzActivity = activities.findByCustomerIdAndDeletedAtIsNullOrderByActivityDateDesc(xyzId).get(0).getId();
+        mvc.perform(get("/activities/" + xyzActivity + "/edit").with(marcus())).andExpect(status().isForbidden());
+        mvc.perform(post("/activities/" + xyzActivity + "/delete").with(marcus()).with(csrf())).andExpect(status().isForbidden());
+        // Manager-only pages are refused too
+        mvc.perform(get("/overview").with(marcus())).andExpect(status().isForbidden());
+        mvc.perform(get("/audit").with(marcus())).andExpect(status().isForbidden());
+        mvc.perform(get("/users").with(marcus())).andExpect(status().isForbidden());
+        // Alternative: the Manager is allowed
         mvc.perform(get("/customers/" + xyzId).with(priya())).andExpect(status().isOk());
-        // ...but a Manager of another team is not
-        mvc.perform(get("/customers/" + xyzId).with(daniel())).andExpect(status().isForbidden());
     }
 
     // ---------------------------------------------------------------------------------------------
     @Test @Order(8)
-    void scenario8_monitoringTeamStatuses() throws Exception {
-        // 1–2. Counts by status and the team customer list
-        mvc.perform(get("/team").with(priya()))
+    void scenario8_monitoringCustomerStatuses() throws Exception {
+        // 1–2. Counts by status and the customer list
+        mvc.perform(get("/overview").with(priya()))
            .andExpect(model().attribute("total", 2L))
            .andExpect(model().attribute("counts", hasEntry(CustomerStatus.ACTIVE, 1L)))
            .andExpect(model().attribute("counts", hasEntry(CustomerStatus.NEGOTIATING, 1L)))
            .andExpect(model().attribute("customers", hasSize(2)));
-        // 3. Filter by owner, status and date range
-        mvc.perform(get("/team").param("ownerId", u("marcus@example.com").getId().toString()).with(priya()))
+        // 3. Owner and status filter the customer list; the date range filters changes and activities
+        mvc.perform(get("/overview").param("ownerId", u("marcus@example.com").getId().toString()).with(priya()))
            .andExpect(model().attribute("customers", hasSize(1)))
            .andExpect(content().string(containsString("ABC Company")));
-        mvc.perform(get("/team").param("status", "NEGOTIATING").with(priya()))
+        mvc.perform(get("/overview").param("status", "NEGOTIATING").with(priya()))
            .andExpect(model().attribute("customers", hasSize(1)))
            .andExpect(content().string(containsString("XYZ Company")));
-        mvc.perform(get("/team").param("from", LocalDate.now().toString()).param("to", LocalDate.now().toString()).with(priya()))
-           .andExpect(model().attribute("transitions", not(empty())));
+        mvc.perform(get("/overview").param("from", LocalDate.now().toString()).param("to", LocalDate.now().toString()).with(priya()))
+           .andExpect(model().attribute("transitions", not(empty())))
+           .andExpect(content().string(containsString("Called Ploy to check in.")));
         // Alternative: no match -> empty result, not unrelated records
-        mvc.perform(get("/team").param("status", "LOST").with(priya()))
+        mvc.perform(get("/overview").param("status", "LOST").with(priya()))
            .andExpect(model().attribute("customers", empty()))
            .andExpect(content().string(containsString("No results found")));
-        mvc.perform(get("/team").param("from", "2030-01-01").with(priya()))
-           .andExpect(content().string(containsString("No status changes in this period.")));
+        mvc.perform(get("/overview").param("from", "2030-01-01").with(priya()))
+           .andExpect(content().string(containsString("No status changes in this period.")))
+           .andExpect(content().string(containsString("No activity in this period.")));
         // 4. Open a customer: status history and timeline
         mvc.perform(get("/customers/" + abcId).with(priya()))
            .andExpect(content().string(containsString("Status history")))
            .andExpect(content().string(containsString("Customer accepted the proposal")));
-        // 5. Recent team activity
-        mvc.perform(get("/activities").with(priya())).andExpect(content().string(containsString("Called Ploy to check in.")));
         // 6. Reassignment is available from the profile
         mvc.perform(get("/customers/" + xyzId).with(priya())).andExpect(content().string(containsString("Reassign owner")));
-        // Another team's manager sees none of this
-        mvc.perform(get("/team").with(daniel())).andExpect(model().attribute("total", 0L));
     }
 }

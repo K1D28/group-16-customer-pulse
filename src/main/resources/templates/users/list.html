@@ -12,7 +12,7 @@
             <div class="page-head">
                 <div>
                     <h1>User management</h1>
-                    <p th:text="'People in ' + ${me.team.name} + '. New users join your team.'"></p>
+                    <p>Everyone who can use Customer Pulse. Users are deactivated, never deleted.</p>
                 </div>
                 <a class="btn btn-primary" th:href="@{/users/new}"><span class="ms">person_add</span> Add user</a>
             </div>
@@ -34,7 +34,7 @@
                             <td><span class="pill no-dot role-pill" th:classappend="${u.manager} ? 'manager'" th:text="${u.role.label}"></span></td>
                             <td>
                                 <span th:if="${u.active}" class="pill fu-completed">Active</span>
-                                <span th:unless="${u.active}" class="pill st-inactive">Inactive</span>
+                                <span th:unless="${u.active}" class="pill st-inactive">Deactivated</span>
                             </td>
                             <td class="text-end tnum" th:text="${owned.get(u.id)}"></td>
                             <td class="text-nowrap" th:text="${@fmt.date(u.createdAt)}"></td>
@@ -46,10 +46,6 @@
                                 </form>
                                 <form th:if="${!u.active}" class="d-inline" th:action="@{/users/{id}/activate(id=${u.id})}" method="post">
                                     <button class="btn btn-sm btn-soft" type="submit"><span class="ms">person_check</span> Reactivate</button>
-                                </form>
-                                <form th:if="${u.id != me.id}" class="d-inline" th:action="@{/users/{id}/delete(id=${u.id})}" method="post"
-                                      th:attr="data-confirm='Delete user ' + ${u.fullName} + '?'">
-                                    <button class="btn btn-sm btn-light" type="submit" aria-label="Delete"><span class="ms">delete</span></button>
                                 </form>
                             </td>
                         </tr>

@@ -24,6 +24,10 @@
                   th:action="${customer == null} ? @{/customers} : @{/customers/{id}(id=${customer.id})}" novalidate>
                 <div class="cp-card-body d-grid gap-3">
 
+                    <div th:if="${error}" class="alert alert-danger flash mb-0" role="alert">
+                        <span class="ms">error</span><span th:text="${error}"></span>
+                    </div>
+
                     <div th:if="${similar != null}" class="alert alert-warning flash mb-0" role="alert">
                         <span class="ms">warning</span>
                         <div>
@@ -34,7 +38,7 @@
                                     <span class="text-muted" th:text="'(owner: ' + ${s.owner.fullName} + ')'"></span>
                                 </li>
                             </ul>
-                            <div>Check that this is not a duplicate. If it is a different company, save again.</div>
+                            <div>Check that this is not a duplicate. Choose <strong>Save anyway</strong> if it is a different company, or <strong>Cancel</strong>.</div>
                             <input type="hidden" name="confirmDuplicate" value="true">
                         </div>
                     </div>
@@ -52,7 +56,9 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="phone">Phone</label>
-                            <input class="form-control" th:field="*{phone}" th:errorclass="is-invalid" maxlength="30" placeholder="+66 81 234 5678">
+                            <input class="form-control" th:field="*{phone}" th:errorclass="is-invalid" maxlength="10" inputmode="numeric"
+                                   pattern="[0-9]{10}" placeholder="0812345678" title="10 digits, numbers only">
+                            <div class="form-text">10 digits, numbers only.</div>
                             <div class="invalid-feedback" th:errors="*{phone}"></div>
                         </div>
                     </div>
@@ -61,15 +67,19 @@
                         <input class="form-control" type="email" th:field="*{email}" th:errorclass="is-invalid" maxlength="100">
                         <div class="invalid-feedback" th:errors="*{email}"></div>
                     </div>
-                    <div th:if="${me.manager}">
+                    <div th:if="${me.manager and customer == null}">
                         <label class="form-label" for="ownerId">Owner</label>
                         <select class="form-select" th:field="*{ownerId}">
                             <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.role.label} + ')'"></option>
                         </select>
+                        <div class="form-text">Only active users are listed.</div>
                     </div>
-                    <div th:unless="${me.manager}" class="text-muted small">
+                    <div th:if="${!me.manager and customer == null}" class="text-muted small">
+                        <span class="ms ms-sm">person</span> You will be the owner of this customer.
+                    </div>
+                    <div th:if="${customer != null}" class="text-muted small">
                         <span class="ms ms-sm">person</span>
-                        <span th:text="${customer == null} ? 'You will be the owner of this customer.' : 'Owner: ' + ${customer.owner.fullName}"></span>
+                        <span th:text="'Owner: ' + ${customer.owner.fullName} + (${me.manager} ? '. To change the owner, use Reassign owner on the customer page.' : '')"></span>
                     </div>
                 </div>
                 <div class="cp-card-body border-top d-flex gap-2 justify-content-end">

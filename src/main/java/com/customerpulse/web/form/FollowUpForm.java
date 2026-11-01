@@ -12,11 +12,8 @@ public class FollowUpForm {
     @NotNull(message = "Choose a customer")
     private Long customerId;
 
-    /** Optional originating activity. */
+    /** Optional originating activity. The assignee is always the customer's owner (FR-05). */
     private Long activityId;
-
-    @NotNull(message = "Choose who is responsible")
-    private Long assignedUserId;
 
     @NotNull(message = "Due date is required")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -29,7 +26,6 @@ public class FollowUpForm {
         FollowUpForm form = new FollowUpForm();
         form.customerId = f.getCustomer().getId();
         form.activityId = f.getActivity() == null ? null : f.getActivity().getId();
-        form.assignedUserId = f.getAssignedUser().getId();
         form.dueDate = f.getDueDate();
         form.notes = f.getNotes();
         return form;
@@ -39,8 +35,6 @@ public class FollowUpForm {
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public Long getActivityId() { return activityId; }
     public void setActivityId(Long activityId) { this.activityId = activityId; }
-    public Long getAssignedUserId() { return assignedUserId; }
-    public void setAssignedUserId(Long assignedUserId) { this.assignedUserId = assignedUserId; }
     public LocalDate getDueDate() { return dueDate; }
     public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
     public String getNotes() { return notes; }

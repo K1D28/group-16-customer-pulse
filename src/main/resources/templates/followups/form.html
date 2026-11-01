@@ -12,7 +12,7 @@
             <div class="page-head">
                 <div>
                     <a class="small fw-semibold text-decoration-none"
-                       th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/followups}">
+                       th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/dashboard}">
                         <span class="ms ms-sm">arrow_back</span> Back
                     </a>
                     <h1 class="mt-1" th:text="${followUp == null} ? 'Add follow-up' : 'Edit follow-up'">Add follow-up</h1>
@@ -23,6 +23,9 @@
             <form class="cp-card form-card" th:object="${form}" method="post" novalidate
                   th:action="${followUp == null} ? @{/followups} : @{/followups/{id}(id=${followUp.id})}">
                 <div class="cp-card-body d-grid gap-3">
+                    <div th:if="${error}" class="alert alert-danger flash mb-0" role="alert">
+                        <span class="ms">error</span><span th:text="${error}"></span>
+                    </div>
                     <div>
                         <label class="form-label" for="customerId">Customer <span class="text-danger">*</span></label>
                         <select class="form-select" th:field="*{customerId}" th:errorclass="is-invalid" th:disabled="${followUp != null}"
@@ -46,15 +49,18 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" for="dueDate">Due date <span class="text-danger">*</span></label>
-                            <input class="form-control" type="date" th:field="*{dueDate}" th:errorclass="is-invalid">
+                            <input class="form-control" type="date" th:field="*{dueDate}" th:errorclass="is-invalid"
+                                   th:min="${followUp == null or followUp.dueDate == null or !followUp.dueDate.isBefore(today)} ? ${today} : ${followUp.dueDate}">
                             <div class="invalid-feedback" th:errors="*{dueDate}"></div>
+                            <div class="form-text">Today or later. Editing only the notes keeps the current date.</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="assignedUserId">Assigned to <span class="text-danger">*</span></label>
-                            <select class="form-select" th:field="*{assignedUserId}" th:errorclass="is-invalid">
-                                <option th:each="u : ${userOptions}" th:value="${u.id}" th:text="${u.fullName}"></option>
-                            </select>
-                            <div class="invalid-feedback" th:errors="*{assignedUserId}"></div>
+                            <span class="form-label d-block">Assigned to</span>
+                            <div class="form-control-plaintext d-flex align-items-center gap-2" th:if="${customer != null}">
+                                <span class="avatar avatar-sm avatar-soft" th:text="${(followUp != null ? followUp.assignedUser : customer.owner).initials}"></span>
+                                <span th:text="${(followUp != null ? followUp.assignedUser : customer.owner).fullName}"></span>
+                            </div>
+                            <div class="form-text">Always the customer's owner, set automatically.</div>
                         </div>
                     </div>
 
@@ -69,7 +75,7 @@
                     </div>
                 </div>
                 <div class="cp-card-body border-top d-flex gap-2 justify-content-end">
-                    <a class="btn btn-light" th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/followups}">Cancel</a>
+                    <a class="btn btn-light" th:href="${customer != null} ? @{/customers/{id}(id=${customer.id})} : @{/dashboard}">Cancel</a>
                     <button class="btn btn-primary" type="submit"><span class="ms">save</span> Save follow-up</button>
                 </div>
             </form>
