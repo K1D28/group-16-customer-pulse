@@ -53,13 +53,16 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (customers.count() == 0 && users.findByEmailIgnoreCase("priya@example.com").isPresent()) seedBase();
-    }
-
-    private void seedBase() {
-        AppUser priya = users.findByEmailIgnoreCase("priya@example.com").orElseThrow();
+        // The demo accounts are added whenever they are missing, so the login page always offers
+        // a Manager and two Staff logins, even on a database that already has other data.
+        AppUser priya = user("Priya Raman", "priya@example.com", Role.MANAGER);
         AppUser nadia = user("Nadia Osei", "nadia@example.com", Role.STAFF);
         AppUser marcus = user("Marcus Lindqvist", "marcus@example.com", Role.STAFF);
+        // Sample customers only go into an empty database
+        if (customers.count() == 0) seedBase(priya, nadia, marcus);
+    }
+
+    private void seedBase(AppUser priya, AppUser nadia, AppUser marcus) {
 
         customer("ABC Company Ltd.", "Suchada Boon", "suchada@abc-th.com", "0891234501", CustomerStatus.HOLD, nadia, 41, priya, "Budget under approval until next month");
         customer("Orion Freight Co.", "Wichai Meesuk", "wichai@orionfr.co", "0815532290", CustomerStatus.ACTIVE, nadia, 43, nadia, "Contract signed");
@@ -114,7 +117,11 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Demo data loaded: staff nadia@example.com and marcus@example.com, password: {}", DEMO_PASSWORD);
     }
 
+    /** The existing account with this email, or a new one with the demo password. */
     private AppUser user(String name, String email, Role role) {
+        var existing = users.findByEmailIgnoreCase(email);
+        if (existing.isPresent()) return existing.get();
+        log.info("Added demo account {}", email);
         AppUser u = new AppUser();
         u.setFullName(name);
         u.setEmail(email);
