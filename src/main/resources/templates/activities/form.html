@@ -44,7 +44,7 @@
                         <span class="form-label d-block">Activity type <span class="text-danger">*</span></span>
                         <div class="choice-grid" th:classappend="${#fields.hasErrors('activityType')} ? 'is-invalid-group'">
                             <th:block th:each="t : ${activityTypes}">
-                                <input type="radio" th:field="*{activityType}" th:value="${t}">
+                                <input type="radio" th:field="*{activityType}" th:value="${t}" th:attr="data-channel=${t.defaultChannel}">
                                 <label th:for="${#ids.prev('activityType')}">
                                     <span class="ms" th:text="${t.icon}">call</span><span th:text="${t.label}">Call</span>
                                 </label>

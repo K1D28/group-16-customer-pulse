@@ -19,3 +19,14 @@ document.querySelectorAll('[data-count]').forEach(function (field) {
   field.addEventListener('input', update);
   update();
 });
+
+// Activity form: choosing an activity type pre-selects its usual channel (still changeable)
+(function () {
+  var channel = document.getElementById('channel');
+  if (!channel) return;
+  document.querySelectorAll('input[name="activityType"][data-channel]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (radio.checked) channel.value = radio.getAttribute('data-channel');
+    });
+  });
+})();

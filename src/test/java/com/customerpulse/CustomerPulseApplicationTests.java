@@ -87,6 +87,15 @@ class CustomerPulseApplicationTests {
     }
 
     @Test
+    @WithUserDetails("nadia@example.com")
+    void activityTypesCarryTheirDefaultChannel() throws Exception {
+        mvc.perform(get("/activities/new"))
+           .andExpect(content().string(containsString("value=\"CALL\" data-channel=\"PHONE\"")))
+           .andExpect(content().string(containsString("value=\"MEETING\" data-channel=\"IN_PERSON\"")))
+           .andExpect(content().string(containsString("value=\"CHAT\" data-channel=\"LINE\"")));
+    }
+
+    @Test
     @WithUserDetails("priya@example.com")
     void managerSeesEverything() throws Exception {
         mvc.perform(get("/customers/" + byName("Maple & Finch Retail").getId())).andExpect(status().isOk());
