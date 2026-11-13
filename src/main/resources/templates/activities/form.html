@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments/layout :: head(${activity == null} ? 'Log activity' : 'Edit activity')}"></head>
+<head th:replace="~{fragments/layout :: head(${activity == null} ? 'Activity' : 'Edit activity')}"></head>
 <body>
 <div class="app">
     <aside th:replace="~{fragments/layout :: sidebar}"></aside>
@@ -15,7 +15,7 @@
                        th:href="${form.customerId != null} ? @{/customers/{id}(id=${form.customerId})} : @{/dashboard}">
                         <span class="ms ms-sm">arrow_back</span> Back
                     </a>
-                    <h1 class="mt-1" th:text="${activity == null} ? 'Log activity' : 'Edit activity'">Log activity</h1>
+                    <h1 class="mt-1" th:text="${activity == null} ? 'Activity' : 'Edit activity'">Activity</h1>
                     <p>Record a call, meeting, message or quotation so the whole team can see it.</p>
                 </div>
             </div>

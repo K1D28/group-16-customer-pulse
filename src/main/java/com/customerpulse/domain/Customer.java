@@ -22,7 +22,8 @@ public class Customer {
     @Column(length = 100)
     private String email;
 
-    @Column(length = 30)
+    /** Exactly 10 digits when entered (FR-02). */
+    @Column(length = 10)
     private String phone;
 
     @Enumerated(EnumType.STRING)

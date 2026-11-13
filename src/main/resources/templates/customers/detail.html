@@ -22,7 +22,7 @@
                     </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-primary" th:href="@{/activities/new(customerId=${customer.id})}"><span class="ms">add_comment</span> Log activity</a>
+                    <a class="btn btn-primary" th:href="@{/activities/new(customerId=${customer.id})}"><span class="ms">add_comment</span> Activity</a>
                     <a class="btn btn-soft" th:href="@{/followups/new(customerId=${customer.id})}"><span class="ms">event_upcoming</span> Add follow-up</a>
                     <button class="btn btn-soft" type="button" data-bs-toggle="modal" data-bs-target="#statusModal"><span class="ms">swap_horiz</span> Change status</button>
                     <button th:if="${me.manager}" class="btn btn-soft" type="button" data-bs-toggle="modal" data-bs-target="#ownerModal"><span class="ms">person_add</span> Reassign owner</button>
