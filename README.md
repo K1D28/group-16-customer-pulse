@@ -15,10 +15,14 @@ mvn spring-boot:run
 mvn -DskipTests package && java -jar target/customer-pulse.jar
 ```
 
-Open http://localhost:8080. A fresh database starts with the first Manager (created at installation, FR-10) and
-demo data: Manager `priya@example.com`, Staff `nadia@example.com` and `marcus@example.com`, all with password
-`password123`. Each one is a one-click login on the login page. For a clean start with only the Manager,
-set `app.seed-demo-data=false` (or `APP_SEED_DEMO_DATA=false`). Phone numbers are 10 digits, numbers only.
+Open http://localhost:8080. A fresh database starts with only the first Manager (created at installation, FR-10).
+The default login is `priya@example.com` with password `password123`; configure `APP_FIRST_MANAGER_NAME`,
+`APP_FIRST_MANAGER_EMAIL` and `APP_FIRST_MANAGER_PASSWORD` before starting with a new database, especially
+for a public deployment. These settings do not change existing users.
+
+For demo data, set `APP_SEED_DEMO_DATA=true` before startup. This adds demo accounts and sample customers;
+demo accounts use the known password `password123`, so do not enable them on a public deployment. Phone numbers
+are 10 digits, numbers only.
 
 By default the app uses an **embedded H2** database stored in `./data/`. Stop the app and delete that folder to start clean.
 Managers can browse it at http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/customerpulse`, user `sa`, no password).
@@ -141,3 +145,35 @@ gcloud run deploy customer-pulse --source . --region=asia-southeast1 --allow-una
 ```bash
 SPRING_PROFILES_ACTIVE=mysql DB_USER=root DB_PASS=secret mvn spring-boot:run
 ```
+
+### Local app with Cloud SQL
+
+The existing Cloud Run service and the local app can use the same Cloud SQL database. Changes made
+locally affect the deployed app's data, including the startup job that marks overdue follow-ups.
+Use a separate Cloud SQL database for isolated testing.
+
+1. Authenticate with Application Default Credentials and start the Cloud SQL Auth Proxy in a terminal:
+
+  ```bash
+  gcloud auth application-default login
+  cloud-sql-proxy lad-cd:us-central1:customerpulse --port 3306
+  ```
+
+2. In another terminal, enter the database password without placing it in shell history, then start
+  the application:
+
+  ```bash
+  read -rs DB_PASS
+  export DB_PASS
+  SPRING_PROFILES_ACTIVE=mysql \
+  DB_URL='jdbc:mysql://127.0.0.1:3306/customer_pulse' \
+  DB_USER=pulse APP_SEED_DEMO_DATA=false \
+  SPRING_JPA_HIBERNATE_DDL_AUTO=validate mvn spring-boot:run
+  ```
+
+  The password prompt is intentionally hidden. Open http://localhost:8080 and keep the proxy running
+  until the application is stopped. `validate` checks the existing schema without changing it.
+
+The deployed service is https://customerpulse-z7geytsu6q-uc.a.run.app. It uses the MySQL profile and
+the Cloud SQL socket factory; its runtime service account needs the Cloud SQL Client role. Store the
+database password in Secret Manager rather than committing it to source control.
