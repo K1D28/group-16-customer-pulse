@@ -6,7 +6,7 @@
     <aside th:replace="~{fragments/layout :: sidebar}"></aside>
     <div class="app-main">
         <header th:replace="~{fragments/layout :: topbar}"></header>
-        <main class="app-content">
+        <main class="app-content customers-page">
             <div th:replace="~{fragments/layout :: flash}"></div>
 
             <div class="page-head">
@@ -18,7 +18,7 @@
             </div>
 
             <section class="cp-card">
-                <form class="cp-card-body filter-bar border-bottom" th:action="@{/customers}" method="get">
+                <form class="cp-card-body filter-bar customer-filters border-bottom" th:action="@{/customers}" method="get">
                     <div class="flex-grow-1">
                         <label class="form-label" for="q">Search</label>
                         <input class="form-control" id="q" name="q" th:value="${q}" placeholder="Company or contact name">

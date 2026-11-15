@@ -6,7 +6,7 @@
     <aside th:replace="~{fragments/layout :: sidebar}"></aside>
     <div class="app-main">
         <header th:replace="~{fragments/layout :: topbar}"></header>
-        <main class="app-content">
+        <main class="app-content reporting-page">
             <div th:replace="~{fragments/layout :: flash}"></div>
 
             <div class="page-head">
@@ -16,7 +16,7 @@
                 </div>
             </div>
 
-            <form class="cp-card cp-card-body filter-bar mb-4" th:action="@{/audit}" method="get">
+            <form class="cp-card cp-card-body filter-bar report-filters mb-4" th:action="@{/audit}" method="get">
                 <div>
                     <label class="form-label" for="from">From</label>
                     <input class="form-control" type="date" id="from" name="from" th:value="${from}">

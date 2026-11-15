@@ -6,7 +6,7 @@
     <aside th:replace="~{fragments/layout :: sidebar}"></aside>
     <div class="app-main">
         <header th:replace="~{fragments/layout :: topbar}"></header>
-        <main class="app-content">
+        <main class="app-content overview-page">
             <div th:replace="~{fragments/layout :: flash}"></div>
 
             <div class="page-head">
@@ -16,7 +16,7 @@
                 </div>
             </div>
 
-            <form class="cp-card cp-card-body filter-bar mb-4" th:action="@{/overview}" method="get">
+            <form class="cp-card cp-card-body filter-bar report-filters mb-4" th:action="@{/overview}" method="get">
                 <div>
                     <label class="form-label" for="ownerId">Owner</label>
                     <select class="form-select" id="ownerId" name="ownerId">
@@ -48,7 +48,7 @@
             </p>
 
             <!-- Counts per status -->
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-4 overview-stats">
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="cp-card kpi">
                         <span class="kpi-label">Total</span>
