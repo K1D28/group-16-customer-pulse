@@ -8,7 +8,7 @@ The original front-end-only mock-up is kept in `prototype/index.html` for refere
 ## Group members
 
 ```
-6631503073  Sai Khant Zay Lynn Yaung
+6831503027  Sai Khant Zay Lynn Yaung
 6831503015  Pranto Nokrek
 6831503030  Ye Wint Thura Aung
 6831503031  Ye Yint Thiha Aung
