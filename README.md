@@ -5,6 +5,24 @@ Spring Boot 3 · Spring Data JPA · Thymeleaf · Bootstrap 5 + custom CSS · H2 
 
 The original front-end-only mock-up is kept in `prototype/index.html` for reference.
 
+## Group members
+
+```
+6631503073  Sai Khant Zay Lynn Yaung
+6831503015  Pranto Nokrek
+6831503030  Ye Wint Thura Aung
+6831503031  Ye Yint Thiha Aung
+```
+
+## Responsibilities
+
+| Member | Features |
+|---|---|
+| Sai Khant Zay Lynn Yaung | TODO |
+| Pranto Nokrek | TODO |
+| Ye Wint Thura Aung | TODO |
+| Ye Yint Thiha Aung | TODO |
+
 ## Run locally
 
 Needs Java 21 and Maven.
