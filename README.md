@@ -18,11 +18,12 @@ The original front-end-only mock-up is kept in `prototype/index.html` for refere
 ## Responsibilities
 
 | Member | Features |
-| Myint Myat Pyae Sone | TODO |
-| Sai Khant Zay Lynn Yaung | TODO |
-| Pranto Nokrek | TODO |
-| Ye Wint Thura Aung | TODO |
-| Ye Yint Thiha Aung | TODO |
+|---|---|
+| Myint Myat Pyae Sone | Database design and integration (JPA entities, repositories, H2/MySQL configuration) |
+| Sai Khant Zay Lynn Yaung | Backend: customer management, profiles, and search |
+| Pranto Nokrek | Backend: activity logging and follow-up tracking |
+| Ye Wint Thura Aung | Frontend: dashboard, customer overview, and reporting |
+| Ye Yint Thiha Aung | Frontend: authentication, user management, and access control |
 
 ## Run locally
 
