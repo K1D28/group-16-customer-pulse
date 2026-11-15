@@ -18,7 +18,7 @@ The original front-end-only mock-up is kept in `prototype/index.html` for refere
 ## Responsibilities
 
 | Member | Features |
-|---|---|
+| Myint Myat Pyae Sone | TODO |
 | Sai Khant Zay Lynn Yaung | TODO |
 | Pranto Nokrek | TODO |
 | Ye Wint Thura Aung | TODO |
