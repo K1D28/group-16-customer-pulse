@@ -3,6 +3,8 @@ package com.customerpulse.service;
 import com.customerpulse.domain.*;
 import com.customerpulse.repository.ActivityRepository;
 import com.customerpulse.web.form.ActivityForm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,10 +13,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/** FR-04: log, edit and soft-delete activities for customers in the user's scope. */
 @Service
 @Transactional
 public class ActivityService {
+
+    private static final Logger log = LoggerFactory.getLogger(ActivityService.class);
 
     private final ActivityRepository activities;
     private final CustomerService customerService;
@@ -29,7 +32,6 @@ public class ActivityService {
         this.audit = audit;
     }
 
-    /** FR-03: the customer's timeline, newest first, without deleted activities. */
     @Transactional(readOnly = true)
     public List<Activity> timeline(Long customerId) {
         return activities.findByCustomerIdAndDeletedAtIsNullOrderByActivityDateDesc(customerId);
@@ -40,7 +42,6 @@ public class ActivityService {
         return activities.findRecent(guard.scope(me), from, to, PageRequest.of(0, limit));
     }
 
-    /** The logged-in user is saved as the logger. */
     public Activity log(ActivityForm form, AppUser me) {
         Customer c = customerService.getAccessible(form.getCustomerId(), me);
         Activity a = new Activity();
@@ -49,10 +50,10 @@ public class ActivityService {
         apply(a, form);
         activities.save(a);
         audit.created(me, AuditRecordType.ACTIVITY, a.getId(), c, AuditService.snapshot(a));
+        log.info("Logged activity id={} for customer id={}", a.getId(), c.getId());
         return a;
     }
 
-    /** The customer's owner or a Manager can change any of its activities, including a previous owner's. */
     @Transactional(readOnly = true)
     public Activity getEditable(Long id, AppUser me) {
         Activity a = activities.findById(id).filter(x -> !x.isDeleted())
@@ -61,20 +62,20 @@ public class ActivityService {
         return a;
     }
 
-    /** The original logger is kept; the editor is recorded in the audit log. */
     public Activity update(Long id, ActivityForm form, AppUser me) {
         Activity a = getEditable(id, me);
         Map<String, Object> before = AuditService.snapshot(a);
         apply(a, form);
         audit.updated(me, AuditRecordType.ACTIVITY, a.getId(), a.getCustomer(), before, AuditService.snapshot(a));
+        log.info("Updated activity id={} for customer id={}", a.getId(), a.getCustomer().getId());
         return a;
     }
 
-    /** Soft delete. Follow-ups created from this activity are not changed and keep their link. */
     public Long delete(Long id, AppUser me) {
         Activity a = getEditable(id, me);
         a.setDeletedAt(LocalDateTime.now());
         audit.deleted(me, AuditRecordType.ACTIVITY, a.getId(), a.getCustomer(), AuditService.snapshot(a));
+        log.info("Soft-deleted activity id={} for customer id={}", a.getId(), a.getCustomer().getId());
         return a.getCustomer().getId();
     }
 
