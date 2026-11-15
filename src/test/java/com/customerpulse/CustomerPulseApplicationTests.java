@@ -16,6 +16,7 @@ import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -85,6 +86,43 @@ class CustomerPulseApplicationTests {
                         .param("companyName", "Phone Test Co").param("phone", "0812345678"))
            .andExpect(status().is3xxRedirection());
     }
+
+        @Test
+        @WithUserDetails("nadia@example.com")
+        void customerBudgetCanBeCreatedUpdatedDisplayedAndAudited() throws Exception {
+         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customers")
+                   .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                   .param("companyName", "Budget Test Company").param("projectBudget", "1234.50"))
+             .andExpect(status().is3xxRedirection());
+         Customer customer = byName("Budget Test Company");
+         assertThat(customer.getProjectBudget()).isEqualByComparingTo(new BigDecimal("1234.50"));
+         assertThat(auditFor(AuditRecordType.CUSTOMER, customer.getId())).anyMatch(entry -> entry.getChanges().contains("project_budget"));
+         mvc.perform(get("/customers/" + customer.getId()))
+             .andExpect(status().isOk()).andExpect(content().string(containsString("1,234.50")));
+         mvc.perform(get("/customers/" + customer.getId() + "/edit"))
+             .andExpect(status().isOk()).andExpect(content().string(containsString("1234.50")));
+         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customers/" + customer.getId())
+                   .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                   .param("companyName", "Budget Test Company").param("projectBudget", "2500.75"))
+             .andExpect(status().is3xxRedirection());
+         customers.flush();
+         assertThat(customers.findById(customer.getId()).orElseThrow().getProjectBudget())
+              .isEqualByComparingTo(new BigDecimal("2500.75"));
+         assertThat(auditFor(AuditRecordType.CUSTOMER, customer.getId()))
+              .anyMatch(entry -> entry.getAction() == AuditAction.UPDATE && entry.getChanges().contains("project_budget"));
+        }
+
+        @Test
+        @WithUserDetails("nadia@example.com")
+        void customerBudgetRejectsInvalidValues() throws Exception {
+         for (String budget : new String[]{"-1", "12.345", "10000000000000", "not-a-number"}) {
+             mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customers")
+                    .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                    .param("companyName", "Invalid Budget Company").param("projectBudget", budget))
+                 .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "projectBudget"));
+         }
+         assertThat(customers.findByDeletedAtIsNull()).noneMatch(customer -> customer.getCompanyName().equals("Invalid Budget Company"));
+        }
 
     @Test
     @WithUserDetails("nadia@example.com")

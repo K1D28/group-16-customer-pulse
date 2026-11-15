@@ -86,6 +86,8 @@
                                 <dd><a th:if="${customer.email}" th:href="'mailto:' + ${customer.email}" th:text="${customer.email}"></a><span th:unless="${customer.email}">—</span></dd>
                                 <dt>Phone</dt>
                                 <dd><a th:if="${customer.phone}" th:href="'tel:' + ${customer.phone}" th:text="${customer.phone}"></a><span th:unless="${customer.phone}">—</span></dd>
+                                <dt>Project budget</dt>
+                                <dd th:text="${customer.projectBudget != null} ? ${#numbers.formatDecimal(customer.projectBudget, 1, 'COMMA', 2, 'POINT')} : '—'">—</dd>
                                 <dt>Owner</dt>
                                 <dd class="d-flex align-items-center gap-2">
                                     <span class="avatar avatar-sm avatar-soft" th:text="${customer.owner.initials}"></span>

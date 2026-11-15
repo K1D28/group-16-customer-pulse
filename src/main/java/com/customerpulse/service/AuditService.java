@@ -95,6 +95,7 @@ public class AuditService {
         m.put("contact_name", c.getContactName());
         m.put("email", c.getEmail());
         m.put("phone", c.getPhone());
+        m.put("project_budget", c.getProjectBudget());
         m.put("current_status", c.getCurrentStatus() == null ? null : c.getCurrentStatus().name());
         m.put("owner_id", c.getOwner() == null ? null : c.getOwner().getId());
         return m;

@@ -1,6 +1,7 @@
 package com.customerpulse.domain;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /** One customer company (table: customers). */
@@ -25,6 +26,9 @@ public class Customer {
     /** Exactly 10 digits when entered (FR-02). */
     @Column(length = 10)
     private String phone;
+
+    @Column(name = "project_budget", precision = 15, scale = 2)
+    private BigDecimal projectBudget;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "current_status", nullable = false, length = 20)
@@ -56,6 +60,8 @@ public class Customer {
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public BigDecimal getProjectBudget() { return projectBudget; }
+    public void setProjectBudget(BigDecimal projectBudget) { this.projectBudget = projectBudget; }
     public CustomerStatus getCurrentStatus() { return currentStatus; }
     public void setCurrentStatus(CustomerStatus currentStatus) { this.currentStatus = currentStatus; }
     public AppUser getOwner() { return owner; }

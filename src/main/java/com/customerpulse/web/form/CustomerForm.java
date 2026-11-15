@@ -2,9 +2,12 @@ package com.customerpulse.web.form;
 
 import com.customerpulse.domain.Customer;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 
 public class CustomerForm {
 
@@ -22,6 +25,10 @@ public class CustomerForm {
     @Pattern(regexp = "^$|^[0-9]{10}$", message = "Enter a 10-digit phone number (numbers only)")
     private String phone;
 
+    @DecimalMin(value = "0.00", message = "Budget cannot be negative")
+    @Digits(integer = 13, fraction = 2, message = "Use up to 13 digits and 2 decimal places")
+    private BigDecimal projectBudget;
+
     /** Only used on create, and only by Managers; Staff always own what they create. Later changes use FR-09. */
     private Long ownerId;
 
@@ -34,6 +41,7 @@ public class CustomerForm {
         f.contactName = c.getContactName();
         f.email = c.getEmail();
         f.phone = c.getPhone();
+        f.projectBudget = c.getProjectBudget();
         f.ownerId = c.getOwner().getId();
         return f;
     }
@@ -46,6 +54,8 @@ public class CustomerForm {
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public BigDecimal getProjectBudget() { return projectBudget; }
+    public void setProjectBudget(BigDecimal projectBudget) { this.projectBudget = projectBudget; }
     public Long getOwnerId() { return ownerId; }
     public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
     public boolean isConfirmDuplicate() { return confirmDuplicate; }

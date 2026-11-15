@@ -240,6 +240,7 @@ public class CustomerService {
         c.setContactName(blankToNull(f.getContactName()));
         c.setEmail(blankToNull(f.getEmail()));
         c.setPhone(blankToNull(f.getPhone()));
+        c.setProjectBudget(f.getProjectBudget());
     }
 
     /** Owners must be active users (FR-02, FR-09). */
